@@ -602,7 +602,7 @@
 									"syntax": "Packages/Markdown/Markdown.sublime-syntax"
 								},
 								"translation.x": 0.0,
-								"translation.y": 0.0,
+								"translation.y": 172.0,
 								"zoom_level": 1.0
 							},
 							"stack_index": 0,
@@ -675,7 +675,7 @@
 				"height": 0.0
 			},
 			"pinned_build_system": "",
-			"position": "0,1,0,0,0,72,20,712,500,1600,795",
+			"position": "0,0,0,0,0,72,48,712,500,1600,795",
 			"project": "",
 			"replace":
 			{

@@ -1,3 +1,5 @@
 WARN  2017-08-02 12:25:03 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
 ERROR 2017-08-02 12:30:21 unity.settings UnitySettings.cpp:318 Invalid monitor index: -1. Returning index 0 monitor instead.
 WARN  2017-08-02 12:41:08 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
+WARN  2017-08-02 12:47:27 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
+WARN  2017-08-02 12:53:56 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
