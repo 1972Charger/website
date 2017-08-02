@@ -1,0 +1,231 @@
+/*
+*--------------------------------------------------------------------------------------------------------------------------------------------
+* A popUp that displays the diclaimer text in the json.                                                                                     *
+* The image takes up the whole cell.                                                                                                        *
+*============================================================================================================================================
+* disclaimerText        (@jsonItem) = jsonItem of the diclaimer containign the text.                                                        *
+* closeButtonID         (@string)   = the name of the close button ID that should match that of the JSON.                                   *
+* popUpWidth            (@number)   = the width of the popUp.                                                                               *
+* popUpHeight           (@number)   = the height of the popUp.                                                                              *
+* horizPadding          (@number)   = horizontal padding for white text background.                                                         *
+* vertPadding           (@number)   = verical padding for white text background.                                                            *
+* disclaimerTextSize    (@number)   = size of the font used by the discalimer text.                                                         *
+* whiteBoxStartLocation (@number)   = the top or left to set start location of popup.                                                       *
+* positionLeft          (@boolean)  = responsible for determining if top or left needs to be set for the location of popup.                 *
+*******************************************************<== NOTES ==>*************************************************************************
+* @author                  Ryan LaMarche
+* @date                    Feb 11, 2014
+* @version                 1.0
+
+* @modify_by               
+* @modify_date             
+*--------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+var disclaimerPopUp = function(disclaimerText, closeButtonID, popUpWidth, popUpHeight, horizPadding, vertPadding, disclaimerTextSize, whiteBoxStartLocation, positionLeft) {
+
+    //Text padding needed to be aligned with start of the close Button.
+    var textPadding = 10;
+
+    // Div for the popUp
+	var popUpCanvas = document.createElement('div');
+    popUpCanvas.setAttribute('id'       , 'popUp');
+
+    // Div elements appended to the popUp
+    popUpCanvas.appendChild(background = document.createElement('div'));
+    popUpCanvas.appendChild(closeButton = document.createElement('div'));
+    popUpCanvas.appendChild(disclaimerText.html);
+
+    // Canvas elements appended for the closeButton
+    closeButton.appendChild(closeButtonBg = document.createElement('canvas'));
+    closeButton.appendChild(closeButtonBlackHover = document.createElement('canvas'));
+    closeButton.appendChild(closeButtonX = document.createElement('canvas'));
+    
+
+    // For share tracking
+    this.bg = background;
+    this.cb = closeButton;
+
+    // Set arrtributes for closeButtom elements
+    closeButton.setAttribute('id'       , closeButtonID);
+
+    closeButtonBg.setAttribute('width'  , '22');
+    closeButtonBg.setAttribute('height' , '20');
+    closeButtonBlackHover.setAttribute('width'  , '22');
+    closeButtonBlackHover.setAttribute('height' , '20');
+    closeButtonX.setAttribute('width'  , '22');
+    closeButtonX.setAttribute('height' , '20');
+      
+    executeOnLoad(closeButton, function(){
+        if(ie < 9) {
+            G_vmlCanvasManager.initElement(closeButtonBg);
+            G_vmlCanvasManager.initElement(closeButtonBlackHover);
+            G_vmlCanvasManager.initElement(closeButtonX);
+        }
+        // Each layer of the button is its own canvas to animate or change in main
+        var cb = closeButtonBg.getContext("2d");
+        var bh = closeButtonBlackHover.getContext("2d");
+        var bx = closeButtonX.getContext("2d");
+    	
+        // Close Button White Circle
+        cb.beginPath();
+    	cb.arc(11 , 10, 10, 1*Math.PI, 0.5*Math.PI);
+    	cb.fillStyle = '#FFFFFF';
+    	cb.fill();
+
+        // Close Button Black Circle 
+    	bh.beginPath();
+    	bh.arc (11, 10, 7, 0*Math.PI, 2*Math.PI )
+    	bh.fillStyle = '#000000';
+    	bh.fill();
+
+        // Close button 'X'
+    	bx.beginPath();
+    	bx.moveTo(8, 7);
+    	bx.lineTo(14, 13);
+    	bx.moveTo(14, 7);
+    	bx.lineTo(8,13);
+    	bx.strokeStyle = '#FFFFFF';
+    	bx.lineWidth = 2;
+    	bx.stroke();
+
+        // Style the button
+    	superStyle(closeButtonBg, {		
+    		zIndex: 	1,
+    		position: 	'absolute'
+    	})
+
+        // Style the button
+        superStyle(closeButtonBlackHover, {
+            top:        '0px',
+            left:       '0px',
+            opacity:    .9,
+            filter:     'alpha(opacity = 90)',
+            zIndex:     1,
+            position:   'absolute'
+        })
+        // Style the button
+        superStyle(closeButtonX, {
+            top:        '0px',
+            left:       '0px',
+            zIndex:     1,
+            position:   'absolute'
+        })
+
+        // Padding for the text
+        superStyle(disclaimerText.html.children[0], {
+            paddingLeft:    '6px',
+            paddingRight:   textPadding + 'px',
+            paddingTop:     textPadding + 'px',
+            //paddingBottom:  '4px',
+            top:            '0px',
+            position:       'absolute'
+        }); 
+
+        shrink(disclaimerText.html.children[0]); 
+        // Center text vertically
+        disclaimerText.html.children[0].style.top=(disclaimerText.html.children[0].parentNode.offsetHeight/2)-(disclaimerText.html.children[0].offsetHeight/2) - (textPadding/2) + 'px';
+    
+
+        //Style the black background of the popUp
+        superStyle(background, {
+        	width: 			popUpWidth + 'px',
+       		height: 		popUpHeight + 'px',
+       		top: 			0,
+        	position:       'absolute',
+    	    background: 	'#000000', 
+            opacity: 		.8,
+            filter: 		'alpha(opacity = 80)',
+            cursor:         'pointer'
+        })
+        
+        //Style the close button in correct top left location
+        superStyle(closeButton, {
+            width:          '22px',
+            height:         '20px',
+            top:            vertPadding - (20 * (4/20)) + 'px',
+            left:           parseInt(disclaimerText.html.style.width) + horizPadding - (22 * (14/20)) + 'px',
+            position:       'absolute',
+            zIndex:         1
+        });
+    });
+
+    //Stlye the div and bring it infront
+    //Set start location in terms of left or top based on orientaion
+    if (positionLeft == true){
+        superStyle(popUpCanvas, {
+            width:          popUpWidth + 'px',
+            height:         popUpHeight + 'px',
+            left:           whiteBoxStartLocation,
+            position:       'absolute',
+            //opacity:        1,
+            //filter:         'alpha(opacity = 100)',
+            zIndex:         50,
+            visibility:     'hidden'      
+        });
+    }
+    else{
+        superStyle(popUpCanvas, {
+            width:          popUpWidth + 'px',
+            height:         popUpHeight + 'px',
+            top:            whiteBoxStartLocation,
+            position:       'absolute',
+            //opacity:        1,
+            //filter:         'alpha(opacity = 100)',
+            zIndex:         50,
+            visibility:     'hidden'      
+        });
+    }
+
+    // Style the white text box and the font contained
+    superStyle(disclaimerText.html, {
+        width:          popUpWidth - (horizPadding * 2) + 'px',
+        height:         popUpHeight - (vertPadding * 2) + 'px',
+        top:            vertPadding + 'px',
+        right:          horizPadding + 1 + 'px',
+        position:       'absolute',
+        borderRadius:   '4px',
+        background:     '#FFFFFF',
+        overflow:       'hidden',
+        fontFamily:     'Arial, Helvetica, sans-serif',
+        fontSize:       disclaimerTextSize + 'px',
+        //opacity:        1,  
+        //filter:         'alpha(opacity = 100)',
+        color:          '#000000',
+        cursor:         'auto'                
+    });
+
+    //Return the popUp
+    this.dom = popUpCanvas;
+}
+
+//Share tracking for the close button and black background
+disclaimerPopUp.prototype.share = function() {
+    shareTrack(this.bg, this.cb);
+}¢QG=G      YiF¸YiF¸=ù£&YiF¸   §    :https://cdn.speedshiftmedia.com/products/dynamicwebads/adserving/htmlbackup/jstemplate/js/app/shuffle_squareCornerCta/classes/disclaimerPopUp_v2.js?bust=1500071607752 necko:classified 1 strongly-framed 1 security-info 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 request-method GET response-head HTTP/1.1 200 OK
+Content-Type: application/x-javascript
+Content-Length: 8686
+Date: Sat, 13 May 2017 02:01:23 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:23 GMT
+Etag: "6bb7c3f8690956c984939a47d43acac1"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 72853
+X-Cache: Hit from cloudfront
+Via: 1.1 ddaf69ada7188b6901a13f7efa56b14e.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: 9LJy5FZ0N-50xLbNACPBqw2hEd8ba-aEVVysmcL0cfl0YbBqMxQ_mA==
+ original-response-headers Content-Type: application/x-javascript
+Content-Length: 8686
+Connection: keep-alive
+Date: Sat, 13 May 2017 02:01:23 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:23 GMT
+Etag: "6bb7c3f8690956c984939a47d43acac1"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 72853
+X-Cache: Hit from cloudfront
+Via: 1.1 ddaf69ada7188b6901a13f7efa56b14e.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: 9LJy5FZ0N-50xLbNACPBqw2hEd8ba-aEVVysmcL0cfl0YbBqMxQ_mA==
+ uncompressed-len 0 net-response-time-onstart 219 net-response-time-onstop 220   !î

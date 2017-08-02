@@ -1,0 +1,1045 @@
+/*
+*--------------------------------------------------------------------------------------------------------------------------------------------
+* A cell that includes a photo, title, price, and clickthrough button. The 3 text fields are contained together vertically.                 *
+* The image can be either on top of or beside the text fields.                                                                              *
+*============================================================================================================================================
+* position          (@string)   = Position of the cell as it is created.                                                                    *
+* photo             (@jsonItem) = jsonItem of the photo from the inventory.                                                                 *
+* title             (@jsonItem) = jsonItem of the title from the inventory.                                                                 *
+* secondaryTitle    (@jsonItem) = jsonItem of the secondary title from the inventory.                                                       *
+* tertiaryTitle     (@jsonItem) = jsonItem of the tertiary title from the inventory.                                                        *
+* price             (@jsonItem) = jsonItem of the price from the inventory.                                                                 *
+* clickthrough      (@jsonItem) = jsonItem of the button from the inventory.                                                                *
+* width             (@number)   = The width of the cell.                                                                                    *
+* height            (@number)   = The height of the cell.                                                                                   *
+* imgRatio          (@number)   = The ratio of the img width/height compared to the cell width.                                             *
+* bgColour          (@string)   = The background colour of the cell.                                                                        *
+* titlePriceColour  (@string)   = The text colour of the title and price.                                                                   *
+* btnColour         (@string)   = The dark end of the button background colour (gradient).                                                  *
+* btnHoverColour    (@string)   = The dark end of the button background hover colour (gradient).                                            *
+* borderColour      (@string)   = The cell border colour.                                                                                   *
+* vertical          (@boolean)  = Whether the image and details are stacked vertically or horizontally                                      *
+*******************************************************<== NOTES ==>*************************************************************************
+* @author                  Chris Brenner
+* @date                    Nov 12, 2013
+* @version                 1.0
+
+* @modify_by               Chris Brenner
+* @modify_date             Aug 20 2014
+
+* Update Aug 20 2014 by Chris: Added secondary and tertiary text fields and updated cell positioning and sizing.
+* Update July 27 2015 by Paul: Added third line of YMM text for 160x600 and 300x250.
+*--------------------------------------------------------------------------------------------------------------------------------------------
+*/
+
+// Need to access colours outside of cell function for hover effects.
+var _borderColour;
+var _borderHoverColour;
+var _titlePriceColour;
+var _titleTextHoverColour;
+var _priceTextHoverColour;
+var _priceColour;
+var _oneCell;
+
+var _160x600_Cell;
+
+
+// Used for centering images.
+var _imgOffset;
+
+var shuffleCell = function(position,
+                           photo,
+                           title,
+                           secondaryTitle,
+                           tertiaryTitle,
+                           price,
+                           clickthrough,
+                           width,
+                           height,
+                           imgRatio,
+                           bgColour,
+                           titlePriceColour,
+                           btnColour,
+                           btnHoverColour,
+                           borderColour,
+                           vertical,
+                           oneCell,
+                           priceColour,
+						   priceSlashFlag
+                           ) {
+    
+    imgRatio                            = Math.round(imgRatio);
+
+    /***************************************************************************************************************
+    * This is needed for cloning. Take note that jsonItem needs to be cloned as well for cloning to work properly. *
+    ***************************************************************************************************************/
+    this.args = [position,
+                photo,
+                title,
+                secondaryTitle,
+                tertiaryTitle,
+                price,
+                clickthrough,
+                width,
+                height,
+                imgRatio,
+                bgColour,
+                titlePriceColour,
+                btnColour,
+                btnHoverColour,
+                borderColour,
+                vertical,
+                oneCell,
+                priceColour,
+				priceSlashFlag
+                ];
+
+ 
+			if (priceSlashFlag) {
+				superStyle(price.html.children[0], {
+					textDecoration: 'line-through'
+				});
+			}
+
+
+
+
+    if( width == 154 ){
+        _160x600_Cell = true;
+    } else {
+        _160x600_Cell = false;
+    }
+
+    // Clone button for opacity animation. Can't just animate colour as it's a gradient.
+    var clickthroughHover               = clickthrough.clone();
+
+    var secondaryTitleLoaded            = isValid(secondaryTitle.value);
+    var tertiaryTitleLoaded             = isValid(tertiaryTitle.value);
+    var tripleHeader                    = secondaryTitleLoaded || tertiaryTitleLoaded;
+
+    // Colours used for hover effects.
+    _borderColour                       = borderColour;
+    _borderHoverColour                  = (isColorLight(bgColour.replace('#', '0x'))) ? ('#000000')            : ('#ffffff');
+
+    _titlePriceColour                   = titlePriceColour;
+    _titleTextHoverColour               = (isColorLight(bgColour.replace('#', '0x'))) ? ('#000000')            : ('#ffffff');
+    _priceTextHoverColour               = btnHoverColour;
+
+    var btnLightColour                  = lightenDarkenColor2(btnColour, 30);
+    var btnHoverLightColour             = lightenDarkenColor2(btnHoverColour, 30);
+    var buttonTextColour                = (isColorLight(btnColour.replace('#', '0x'), 140)) ? ('#000000')      : ('#ffffff');
+
+    width                               = width - 2; // Account for border.
+    height                              = height - 2; // Account for border.
+
+    var imgWidth                        = vertical ? width                                                      : imgRatio;
+    var imgHeight                       = vertical ? imgRatio                                                   : height;
+
+    var tabWidth                        = vertical ? width                                                      : width - imgWidth;
+    var tabHeight                       = vertical ? height - imgHeight                                         : height;
+
+    var sidePadding                     = 8;
+
+    var topBottomPadding                = tripleHeader ? 5 : 8;    
+    var titlePadding                    = tripleHeader ? 1 : 0;
+    var pricePadding                    = tripleHeader ? 1 : 5;
+
+    var textWidth                       = tabWidth - (sidePadding * 2);
+    var textHeight                      = tabHeight - (topBottomPadding * 2) - (titlePadding * 2) - pricePadding; // The amount of space only the text can occupy.
+    var titleHeight                     = tripleHeader ? Math.floor(textHeight * .1765) : Math.floor(textHeight * .3);
+    var secondaryTitleHeight            = tripleHeader ? Math.ceil(textHeight * .1571) : 0;
+    var priceHeight                     = tripleHeader ? Math.floor(textHeight * .2547) : Math.floor(textHeight * .3);
+    var buttonHeight                    = tripleHeader ? Math.floor(textHeight * .2547) : Math.floor(textHeight * .3);
+
+
+
+   if(oneCell == true){
+    _oneCell = oneCell;
+    } else {
+     _oneCell = false;
+    }
+    
+     _priceColour                       = priceColour;
+
+     if(!priceColour){
+       
+        _priceColour = titlePriceColour;
+     }
+
+
+    // The rest of the function goes through styling and building the cell.
+    var cell = document.createElement('div');
+    cell.setAttribute('id',      position);
+    cell.setAttribute('class',   'cell');
+    cell.appendChild(photo.html);
+    cell.appendChild(tab = document.createElement('div'));
+    tab.setAttribute('class',    'details');
+
+    tab.appendChild(title.html);
+    if (secondaryTitleLoaded) {
+        tab.appendChild(secondaryTitle.html);
+    }
+    if (tertiaryTitleLoaded) {
+        tab.appendChild(tertiaryTitle.html);
+    }
+    tab.appendChild(price.html);
+    tab.appendChild(clickthrough.html);
+    tab.appendChild(clickthroughHover.html);
+
+    superStyle(cell, {
+        position:           'absolute',
+        width:              width + 'px',
+        height:             height + 'px',
+        border:             '1px solid ' + _borderColour,
+        background:         bgColour,
+        overflow:           'hidden',
+        cursor:             'pointer'
+    });
+
+
+    var tempImgWidth   = imgWidth;
+    var tempImgHeight  = imgHeight;
+
+    //console.log('height  ' + height  + '  ' + imgWidth + ' + imgWidth ' + 'imgHeight ' + imgHeight);
+
+    superStyle(photo.html, {
+        width:              imgWidth + 'px',
+        height:             imgHeight + 'px',
+        overflow:           'hidden'
+    });
+
+    if( height == 82 ){
+
+    superStyle(photo.html, {
+        width:              105 + 'px',
+        height:             83 + 'px',
+        overflow:           'hidden'
+    });
+
+    }
+
+
+    if( height == 69 ){
+
+        superStyle(photo.html, {
+        position:       'relative',
+        width:           'auto',
+        height:        '69px',
+        top:            '0px',
+        left:            '5px',
+        overflow:           'hidden'
+        });
+    }
+
+
+    if (vertical == true) {
+        superStyle(photo.html.children[0], {
+            position:       'relative',
+            height:         imgHeight + 'px'
+        });
+
+    }
+    else {
+
+        superStyle(photo.html.children[0], {
+            position:       'relative',
+            width:          imgWidth + 'px'
+        });
+        
+    }
+
+
+
+    // Style for 1 cell version
+    if(oneCell){
+
+        superStyle(photo.html, {
+        width:              120 + 'px',
+        height:             82 + 'px',
+        overflow:           'hidden',
+        position:           'absolute',
+        left:               0 + 'px'
+    });
+
+        superStyle(photo.html.children[0], {
+            position:       'relative',
+            height:         82 + 'px',
+            width:          120 + 'px'
+        });
+
+    }
+    
+
+    superStyle(tab, {
+        position:           'absolute',
+        width:              tabWidth + 'px',
+        height:             tabHeight + 'px',
+        zIndex:             '2'
+    });
+
+    if (vertical == true) {
+        superStyle(tab, {
+            top:            imgHeight + 'px',
+            left:           '0px'
+        });
+    }
+    else {
+        superStyle(tab, {
+            top:            '0px',
+            left:           imgWidth + 'px'
+        });
+    }    
+
+    if(oneCell){
+
+        superStyle(tab, {
+            top:            '0px',
+            left:           120 + 'px'
+        });
+
+    }
+
+  
+
+     if(imgHeight > 115 && imgHeight < 120) {
+
+        superStyle(title.html, {
+            position:           'absolute',
+            top:                -4 + 'px',
+            left:               sidePadding + 'px',
+            width:              textWidth + 'px',
+            height:             32 + 'px',
+            fontFamily:         'Arial, Helvetica, sans-serif',
+            fontSize:           '14px',
+    		lineHeight: 	    '14px',
+            color:              _titlePriceColour,
+            letterSpacing:      '1px'
+        });
+    } else {
+
+        var tempHeight = 48;
+
+        var tempTop =   5;
+        var YMMLength = title.html.children[0].innerHTML.length;
+
+        if(height == 99 && YMMLength <= 23 ){
+
+            tempTop = 20;
+        }
+
+        if( height == 99 && YMMLength > 23 && YMMLength < 40){
+               tempTop = 12;
+        }
+
+        if( height == 99 && YMMLength > 40 ){
+               tempTop = 5;
+        }
+
+
+        var temp160TextHeight = 46;
+
+        tempTop = topBottomPadding
+
+        if(height == 201 && YMMLength >= 40 ){
+            tempHeight = 25;
+              tempTop = 4;
+              temp160TextHeight = 35;
+        }
+
+        if(height == 201 && YMMLength < 40 ){
+            tempHeight = 35;
+              tempTop = 5;
+              temp160TextHeight = 35;
+        }
+
+        if(height == 82){
+            temp160TextHeight = 32;
+            tempTop = 6;
+        }
+
+        // 300x250 with Links   tripleHeader
+        if( height == 79 && YMMLength <= 40 ){
+            tempTop = 10;
+            temp160TextHeight = 40;
+        }
+        if( height == 79 && YMMLength > 40 ){
+            tempTop = 5;
+            temp160TextHeight = 40;
+        }
+        if( height == 79 && YMMLength <= 40 && tripleHeader){
+            tempTop = 4;
+            temp160TextHeight = 14;
+        }
+
+
+      
+
+
+    
+        superStyle(title.html, {
+            position:           'absolute',
+            top:                tempTop + 'px',
+            left:               sidePadding + 'px',
+            width:              textWidth +  'px',
+            height:             temp160TextHeight + 'px',
+            fontFamily:         'Arial, Helvetica, sans-serif',
+            fontSize:           '12px',
+            lineHeight:         '13px',
+            color:              _titlePriceColour,
+            letterSpacing:      '-0.5px'
+        });
+
+
+
+        if(tripleHeader){
+          
+            superStyle(title.html, {
+                position:           'absolute',
+                top:                tempTop + 'px',
+                left:               sidePadding + 'px',
+                width:              textWidth +  'px',
+                height:             temp160TextHeight + 'px',
+                fontFamily:         'Arial, Helvetica, sans-serif',
+                fontSize:           '12px',
+                lineHeight:         '13px',
+                color:              _titlePriceColour,
+                letterSpacing:      '-0.5px',
+                overflow:           'hidden',
+                whiteSpace:         'nowrap'
+            });
+        }
+
+
+    }
+
+
+    if( _160x600_Cell ){
+
+        superStyle(title.html, {
+            position:           'absolute',
+            top:                tempTop + 'px',
+            left:               sidePadding + 'px',
+            width:              textWidth + 'px',
+            height:             temp160TextHeight + 'px',
+            fontFamily:         'Arial, Helvetica, sans-serif',
+            fontSize:           '13px',
+            lineHeight:         '14px',
+            color:              _titlePriceColour,
+            letterSpacing:      '0px'
+        });
+
+    }
+
+    superStyle(title.html.children[0],{
+        position:           'absolute',
+        left:               '0px',
+        width:              textWidth + 'px',
+        overflow:           'hidden',
+        textOverflow:       'ellipsis'
+    });
+
+
+
+    if (secondaryTitleLoaded) {
+        superStyle(secondaryTitle.html, {
+            position:       'absolute',
+            top:            topBottomPadding + titleHeight + titlePadding + 'px',
+            left:           sidePadding + 'px',
+            width:          textWidth + 'px',
+            height:         secondaryTitleHeight + 'px',
+            fontFamily:     'Arial, Helvetica, sans-serif',
+            fontSize:       '11px',
+            lineHeight:     '11px',
+            color:          _titlePriceColour,
+            whiteSpace:     'nowrap'
+        });
+
+        superStyle(secondaryTitle.html.children[0],{
+            position:       'absolute',
+            left:           '0px',
+            width:          textWidth + 'px',
+            overflow:       'hidden',
+            textOverflow:   'ellipsis'
+        });
+    }
+
+    if (tertiaryTitleLoaded) {
+        superStyle(tertiaryTitle.html, {
+            position:       'absolute',
+            top:            secondaryTitleLoaded ? topBottomPadding + titleHeight + secondaryTitleHeight + (titlePadding * 2) + 'px' : topBottomPadding + titleHeight + titlePadding + 'px',
+            left:           sidePadding + 'px',
+            width:          textWidth + 'px',
+            height:         secondaryTitleHeight + 'px',
+            fontFamily:     'Arial, Helvetica, sans-serif',
+            fontSize:       '11px',
+            lineHeight:     '11px',
+            color:          _titlePriceColour,
+            whiteSpace:     'nowrap'
+        });
+
+        superStyle(tertiaryTitle.html.children[0],{
+            position:       'absolute',
+            left:           '0px',
+            width:          textWidth + 'px',
+            overflow:       'hidden',
+            textOverflow:   'ellipsis'
+        });
+    }
+
+    var tempColour;
+
+    if(priceColour){
+         tempColour = _priceColour;
+     } else {
+        tempColour =  _titlePriceColour
+     }
+
+
+     var length =   title.html.children[0].innerHTML.length;
+     var tempPricePos = topBottomPadding + buttonHeight + pricePadding;
+
+
+     // 160x600 Price position
+    if( length > 30 ){
+        tempPricePos = tempPricePos  - 7;
+    }
+
+    if( length > 30 && height == 201 ){
+        tempPricePos = tempPricePos + 4;
+    }
+
+    // 300x250 Price position (Not TripleHeader)
+
+
+    if(height < 70){
+        tempPricePos = 20;
+    }
+
+    if(height == 72){
+        tempPricePos = 20;
+    }
+
+    if(height == 65){
+        tempPricePos = 18;
+    }
+
+
+
+    if( length > 30 && height == 79 ){
+       tempPricePos = tempPricePos - 3;
+        topBottomPadding  = topBottomPadding - 5;
+    }
+
+    if(height == 79){
+        tempPricePos = 22;
+    }
+
+    if(height == 99){
+        tempPricePos = tempPricePos + 2;
+    }
+
+  
+
+    if(height == 82 && length > 25){
+        tempPricePos = 26;
+    }
+
+    var tempPriceSize = 22;
+
+    if(FF){
+        tempPriceSize = 16;
+    }
+
+   
+    superStyle(price.html, {
+        position:       'absolute',
+        right:           sidePadding + 'px',
+        bottom:         tempPricePos + 'px',
+        width:          textWidth + 'px',
+        height:         priceHeight + 'px',
+        fontFamily:     'Arial, Helvetica, sans-serif',
+        fontSize:       tempPriceSize + 'px',
+        fontWeight:     'bold',
+        color:          tempColour,
+        overflow:       'hidden',
+        whiteSpace:     'nowrap'            
+    });
+
+
+
+       // Custom styling for the 160x600 Cell only.
+    if( _160x600_Cell ) {
+
+        superStyle(price.html, {
+            position:       'absolute',
+            right:           sidePadding + 'px',
+            bottom:         tempPricePos  + 'px',
+            width:          textWidth + 'px',
+            height:         priceHeight + 'px',
+            fontFamily:     'Arial, Helvetica, sans-serif',
+            fontSize:       '19px',
+            fontWeight:     'bold',
+            color:          tempColour,
+            overflow:       'hidden',
+            whiteSpace:     'nowrap'            
+        });
+
+     } 
+
+
+    var tempPrice_Xpos = 237;
+
+    if(width < 364){
+        tempPrice_Xpos = 235;
+    }
+
+
+     if(oneCell){
+
+            superStyle(price.html, {
+            position:       'absolute',
+            right:          tempPrice_Xpos + 'px',
+            bottom:         0 + 'px',
+            width:          120 + 'px',
+            height:         21 + 'px',
+            fontFamily:     'Arial, Helvetica, sans-serif',
+            fontSize:       '14px',
+            textAlign:      'center',
+            lineHeight:     22 + 'px',
+            fontWeight:     'normal',
+            color:          '#ffffff',
+            overflow:       'hidden',
+            whiteSpace:     'nowrap' ,
+            background:     'rgba(0,0,0,0.4)'     
+            });
+
+            if (secondaryTitleLoaded) {
+            superStyle(secondaryTitle.html, {
+            position:       'absolute',
+            top:            22 + 'px',
+            left:           sidePadding + 'px',
+            width:          textWidth + 'px',
+            height:         secondaryTitleHeight + 'px',
+            fontFamily:     'Arial, Helvetica, sans-serif',
+            fontSize:       '11px',
+            lineHeight:     '11px',
+            color:          _titlePriceColour,
+            whiteSpace:     'nowrap'
+            });
+
+            superStyle(secondaryTitle.html.children[0],{
+            position:       'absolute',
+            left:           '0px',
+            width:          textWidth + 'px',
+            overflow:       'hidden',
+            textOverflow:   'ellipsis'
+            });
+        }
+
+        if (tertiaryTitleLoaded) {
+                superStyle(tertiaryTitle.html, {
+                    position:       'absolute',
+                    top:            35 + 'px',
+                    left:           sidePadding + 'px',
+                    width:          210 + 'px',
+                    height:         25 + 'px',
+                    fontFamily:     'Arial, Helvetica, sans-serif',
+                    fontSize:       '11px',
+                    lineHeight:     '12px',
+                    color:          _titlePriceColour,
+                    whiteSpace:     'normal'
+                });
+
+                superStyle(tertiaryTitle.html.children[0],{
+                    position:       'absolute',
+                    left:           '0px',
+                    width:          210 + 'px',
+                    overflow:       'hidden',
+                    textOverflow:   'ellipsis'
+                });
+            }
+
+        textWidth = 130;
+        buttonHeight = 16;
+    }
+
+
+          var ctaTextLength =  clickthrough.html.children[0].innerHTML.length;
+          var ctaFontSize = 13;
+
+        //  console.log('  clickthrough.html.children[0].innerHTML   '  +  clickthrough.html.children[0].innerHTML + ' ctaTextLength ' + ctaTextLength);
+
+          if( ctaTextLength > 14){
+            ctaFontSize = 11;
+          }
+
+    if(height == 79){
+        topBottomPadding = 5;
+    }
+           
+
+    superStyle(clickthrough.html, {
+        position:           'absolute',
+        left:               sidePadding + 'px',
+        bottom:             topBottomPadding + 'px',
+        width:              textWidth - 2 + 'px', // Account for border.
+        height:             buttonHeight - 2 + 'px', // Account for border.
+        fontFamily:         'Arial, Helvetica, sans-serif',
+        fontSize:            ctaFontSize + 'px',
+        letterSpacing:      '0.5px',
+        color:              buttonTextColour,
+        overflow:           'hidden',
+        whiteSpace:         'nowrap',
+        border:             '1px solid ' + btnColour,
+        opacity:            1,
+        filter:             'alpha(opacity = ' + (1 * 100) + ')'
+    });
+
+    if (ie < 9) {
+        superStyle(clickthrough.html, {
+            zIndex:         '-1'
+        });
+    }
+
+    superStyle(clickthroughHover.html, {
+        position:           'absolute',
+        left:               sidePadding + 'px',
+        bottom:             topBottomPadding + 'px',
+        width:              textWidth - 2 + 'px',       // Account for border.
+        height:             buttonHeight - 2 + 'px',    // Account for border.
+        fontFamily:         'Arial, Helvetica, sans-serif',
+        fontSize:            ctaFontSize + 'px',
+        letterSpacing:      '0.5px',
+        color:              isColorLight(btnHoverColour.replace('#', '0x'), 155) ? '#000000' : '#ffffff',
+        overflow:           'hidden',
+        whiteSpace:         'nowrap',
+        border:             '1px solid ' + btnHoverColour,
+        opacity:            0,
+        filter:             'alpha(opacity = ' + (0 * 100) + ')'
+    });
+
+    if (ie < 9) {
+        superStyle(clickthroughHover.html, {
+            zIndex:         '-2'
+        });
+    }
+
+    superStyle(clickthrough.html.children[0], {
+        display:            'block',
+        width:              textWidth - 2 + 'px',
+        height:             buttonHeight - 2 + 'px',
+        lineHeight:         buttonHeight - 2 + 'px',
+        textAlign:          'center',
+        verticalAlign:      'middle'
+    });
+
+    superStyle(clickthroughHover.html.children[0], {
+        display:            'block',
+        width:              textWidth - 2 + 'px',
+        height:             buttonHeight - 2 + 'px',
+        lineHeight:         buttonHeight - 2 + 'px',
+        textAlign:          'center',
+        verticalAlign:      'middle'
+    });
+
+    // Set up style functions.
+    executeOnLoad(cell, function(){
+        // shrinkMultiText() to fit by height.
+        // shrinkText() to fit by width.
+        shrinkMultiText(title.html.children[0]);
+
+        if (secondaryTitleLoaded) {
+            shrinkMultiText(secondaryTitle.html.children[0]);
+        }
+        if (tertiaryTitleLoaded) {
+            shrinkMultiText(tertiaryTitle.html.children[0]);
+        }
+
+        shrinkMultiText(price.html.children[0]);
+        shrinkText(price.html.children[0]);
+        shrinkMultiText(clickthrough.html.children[0]);
+        shrinkText(clickthrough.html.children[0]);
+        shrinkMultiText(clickthroughHover.html.children[0]);
+        shrinkText(clickthroughHover.html.children[0]);
+
+      //  addRadius(clickthrough.html, 4);
+      //  addRadius(clickthroughHover.html, 4);
+
+        createGradient('V', [gradientColor(btnLightColour), gradientColor(btnColour), 1, buttonHeight], clickthrough.html);
+        createGradient('V', [gradientColor(btnHoverLightColour), gradientColor(btnHoverColour), 1, buttonHeight], clickthroughHover.html);
+    });
+
+
+    // If photo.loaded is still false, start looping until it has a value of true or 'error'.
+    if (!photo.loaded) {
+        (function myLoop (i) {
+
+            setTimeout(function () {
+                // Requested image has now loaded - center it.
+                if (photo.loaded == true) {
+                    executeOnLoad(photo.html, function(){
+                        // Image stretching
+                        if (vertical) {
+                            superStyle(photo.html.children[0], {
+                                width:         'auto',
+                                height:        imgHeight
+                            });    
+
+                        }  else {
+                            superStyle(photo.html.children[0], {
+                                width:         imgWidth,
+                                height:        'auto'
+                            });
+
+                                                // Customer fix for 300x600 version
+                             if( height == 87){
+
+                                superStyle(photo.html.children[0], {
+                                position:       'relative',
+                                width:          imgWidth + 'px',
+                                height:         '88px'
+                                });
+
+                             }
+
+                        }          
+                         if( height > 71){
+                        centerDiv(photo.html.children[0]);
+                        }                                     
+
+                    });
+                }
+                // Placeholder image has now loaded - make sure it's not resized and center it.
+                else if (photo.loaded == 'error') {
+                    executeOnLoad(photo.html, function(){
+                        superStyle(photo.html.children[0], {
+                            width:         'auto',
+                            height:        'auto'
+                        });
+
+                         if( height > 71){
+                        centerDiv(photo.html.children[0]);
+                        }
+                    });
+                }
+                // Photo.loaded is still false - call loop again unless counter has reached limit.
+                else {
+                    if (--i) myLoop(i); // If photo.loaded is still false, re-call function.
+                }
+
+            }, 100)
+
+        })(50); // Number of iterations.
+    }
+    // Placeholder image has loaded - make sure it's not resized and center it.
+    else if (photo.loaded == 'error') {
+        // Set height and width to auto and center image.
+        executeOnLoad(photo.html, function(){
+            superStyle(photo.html.children[0], {
+                width:         'auto',
+                height:        'auto'
+            });
+
+             if( height > 71){
+            centerDiv(photo.html.children[0]);
+              }
+        });
+    }
+    // Requested image has loaded - center it.
+    else {
+                // Center image.
+        executeOnLoad(photo.html, function(){
+            // Image stretching
+            if (vertical) {
+                superStyle(photo.html.children[0], {
+                    width:         'auto',
+                    height:        imgHeight
+                });    
+            }  else {
+
+                superStyle(photo.html.children[0], {
+                    width:         imgWidth,
+                    height:        'auto'
+                }); 
+
+                    // Customer fix for 728x90 version
+                    if( height == 82){
+
+                        superStyle(photo.html.children[0], {
+                                position:       'relative',
+                                width:          105 + 'px',
+                                height:        '73px',
+                                top:            '4px'
+                        });
+
+                      }
+
+                     if( height < 71){
+
+                        superStyle(photo.html.children[0], {
+                                position:       'relative',
+                                width:           'auto',
+                                height:        '69px',
+                                top:            '0px',
+                                left:            '5px'
+                        });
+
+                      }
+
+                    // Customer fix for 300x600 version
+                    if( height == 87){
+
+                        superStyle(photo.html.children[0], {
+                                position:       'relative',
+                                width:          imgWidth + 'px',
+                                height:         '88px'
+                        });
+
+                      }
+            }                      
+                     if( height > 71){
+                 centerDiv(photo.html.children[0]);
+                  }
+        });
+    }
+
+
+    // When the cell is made and is ready it is put into the dom property.
+    this.dom                    = cell;
+    this.title                  = title.html;
+    this.secondaryTitle         = secondaryTitle.html;
+    this.tertiaryTitle          = tertiaryTitle.html;
+    this.price                  = price.html;
+    this.clickthrough           = clickthrough.html;
+    this.clickthroughHover      = clickthroughHover.html
+
+    this.secondaryTitleLoaded   = secondaryTitleLoaded;
+    this.tertiaryTitleLoaded    = tertiaryTitleLoaded;
+
+    shareTrack(this.dom, photo.html);
+
+    // The mouse events are added to the cell.
+    this.addMouseListeners();
+};
+
+
+// Extend the cell.
+shuffleCell.prototype = new baseCell();
+
+// Change the constructor from cell to shuffleCell.
+shuffleCell.prototype.constructor = shuffleCell;
+
+// Override hover function fo the cell.
+shuffleCell.prototype.hover = function(event) {
+    var self  = this;
+
+    var event = event || window.event;
+    event.stopPropagation ? event.stopPropagation() : (event.cancelBubble = true);
+    target = (event.currentTarget) ? event.currentTarget : event.srcElement;
+
+    animateColor(self.dom, 'border-color', hexToRgb(_borderColour), hexToRgb(_borderHoverColour), 100);
+    animateColor(self.title, 'color', hexToRgb(_titlePriceColour), hexToRgb(_titleTextHoverColour), 100);
+    if (self.secondaryTitleLoaded) {
+        animateColor(self.secondaryTitle, 'color', hexToRgb(_titlePriceColour), hexToRgb(_titleTextHoverColour), 100);
+    }
+    if (self.tertiaryTitleLoaded) {
+        animateColor(self.tertiaryTitle, 'color', hexToRgb(_titlePriceColour), hexToRgb(_titleTextHoverColour), 100);
+    }
+    if(!_oneCell){
+         animateColor(self.price, 'color', hexToRgb(_titlePriceColour), hexToRgb(_priceTextHoverColour), 100);
+    } 
+   
+    new timeAnimation(self.clickthroughHover, {opacity: 1}, 0);
+    if (ie < 9) {
+        new timeAnimation(self.clickthroughHover, {zIndex: 0}, 100);
+    }
+
+}
+
+// Override unHover function fo the cell.
+shuffleCell.prototype.unHover = function(event) {
+    var self  = this;
+
+    var event = event || window.event;
+    event.stopPropagation ? event.stopPropagation() : (event.cancelBubble = true);
+    target = (event.currentTarget) ? event.currentTarget : event.srcElement;
+
+    animateColor(self.dom, 'border-color', hexToRgb(_borderHoverColour), hexToRgb(_borderColour), 100);
+    animateColor(self.title, 'color', hexToRgb(_titleTextHoverColour), hexToRgb(_titlePriceColour), 100);
+    if (self.secondaryTitleLoaded) {
+        animateColor(self.secondaryTitle, 'color', hexToRgb(_titleTextHoverColour), hexToRgb(_titlePriceColour), 100);
+    }
+    if (self.tertiaryTitleLoaded) {
+        animateColor(self.tertiaryTitle, 'color', hexToRgb(_titleTextHoverColour), hexToRgb(_titlePriceColour), 100);
+    }
+
+
+
+    if(!_oneCell){
+       
+         animateColor(self.price, 'color', hexToRgb(_priceTextHoverColour), hexToRgb(_priceColour), 100);
+     } 
+
+   
+
+    new timeAnimation(self.clickthroughHover, {opacity: 0}, 100);
+    if (ie < 9) {
+        new timeAnimation(self.clickthroughHover, {zIndex: -2}, 100);
+    }
+}
+
+// Override focus function fo the cell.
+shuffleCell.prototype.focusState = function(event) {
+
+}
+
+// Override unFocus function fo the cell.
+shuffleCell.prototype.unFocusState = function(event) {
+
+}
+
+// Override animateIn function fo the cell.
+shuffleCell.prototype.animateIn = function(callback) {
+
+}
+
+// Override animateOut function fo the cell.
+shuffleCell.prototype.animateOut = function(callback) {
+
+}
+
+// The function that will return the clone of the cell it takes the new id of the cloned cell as a parameter.
+shuffleCell.prototype.clone = function(pos) {
+    var self = this;
+
+    var temp = new shuffleCell(pos, self.args[1].clone(), self.args[2].clone(), self.args[3].clone(), self.args[4].clone(), self.args[5].clone(), self.args[6].clone(), self.args[7], self.args[8], self.args[9], self.args[10], self.args[11], self.args[12], self.args[13], self.args[14], self.args[15], self.args[16],  self.args[17],self.args[18]);
+
+    return temp;
+}
+U×GÁ)      YiF¸YiF¸=ù£&YiF¸   £    :https://cdn.speedshiftmedia.com/products/dynamicwebads/adserving/htmlbackup/jstemplate/js/app/shuffle_squareCornerCta/classes/shuffleCell_v2.js?bust=1500071607752 necko:classified 1 strongly-framed 1 security-info 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 request-method GET response-head HTTP/1.1 200 OK
+Content-Type: application/x-javascript
+Content-Length: 35468
+Date: Sat, 13 May 2017 01:57:42 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:28 GMT
+Etag: "57465e7dae47a9f7f81ff8b5203b7b5e"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 72853
+X-Cache: Hit from cloudfront
+Via: 1.1 38343488ed12520bf287a2696041ed18.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: iqsktjiVmhM1QwsFErOGZPN1aJ9rnL9zuHCUTFS2wocD8NwTIxkZRA==
+ original-response-headers Content-Type: application/x-javascript
+Content-Length: 35468
+Connection: keep-alive
+Date: Sat, 13 May 2017 01:57:42 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:28 GMT
+Etag: "57465e7dae47a9f7f81ff8b5203b7b5e"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 72853
+X-Cache: Hit from cloudfront
+Via: 1.1 38343488ed12520bf287a2696041ed18.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: iqsktjiVmhM1QwsFErOGZPN1aJ9rnL9zuHCUTFS2wocD8NwTIxkZRA==
+ uncompressed-len 0 net-response-time-onstart 154 net-response-time-onstop 155   ŠŒ

@@ -1,0 +1,281 @@
+/*
+*--------------------------------------------------------------------------------------------------------------------------------
+* A class used to create a textual link with an animated arrow beside it. A hover background colour can be added.               *
+*================================================================================================================================
+* ID                        (@string)   = The id attribute of the arrowTextLink container.                                      *
+* linkText                  (@jsonItem) = The jsonItem of the link text.                                                        *
+* textWidth                 (@number)   = The width of the arrowTextLink.                                                       *
+* textHeight                (@number)   = The height of the arrowTextLink.                                                      *
+* arrowWidth                (@number)   = The width of the arrow.                                                               *
+* arrowHeight               (@number)   = The height of the arrow.                                                              *
+* arrowPadding              (@number)   = The amount of padding between the arrow and the text.                                 *
+* arrowColour               (@string)   = The colour of the arrow and the text.                                                 *
+* arrowBackgroundColor      (@string)   = The background color of the arrow (see notes).                                        *
+* backgroundBorderWidth     (@number)   = The width of the space between the text and the background/border.                    *
+* backgroundHoverColour     (@string)   = The colour of the background/border.                                                  *
+*******************************************************<== NOTES ==>*************************************************************
+* arrowBackgroundColor must be set as a background for the arrows or you'll see a black halo in IE 7.                           *
+*
+*
+* @author                  Chris Brenner
+* @date                    Nov 19, 2013
+* @version                 1.0
+
+* @modify_by               Chris Brenner
+* @modify_date             May 1 2014
+
+* Updated May 1 2014 by Chris: Refactored class to use sprite images instead of canvas tag for arrows.
+*--------------------------------------------------------------------------------------------------------------------------------
+*/
+
+// Variables needed for animations.
+var _arrowStartX;
+var _arrowEndX;
+var _textStartX;
+var _textEndX;
+
+// Used to track how many arrowTextLinks created and set an ID value.
+var _arrowCount = 1;
+
+var arrowTextLink = function(ID, linkText, textWidth, textHeight, arrowWidth, arrowHeight, arrowPadding, arrowColour, arrowBackgroundColor, backgroundBorderWidth, backgroundHoverColour) {
+
+    // Set default values.
+    arrowPadding                = arrowPadding || 5;
+    arrowColour                 = arrowColour || '#000000';
+    backgroundBorderWidth       = backgroundBorderWidth || 2;
+    backgroundHoverColour       = backgroundHoverColour || '';
+
+    // Position of the background image sprite to get the desired arrow colour.
+    var arrowX                  = arrowColour === '#000000' ? -21 : -1;
+    var arrowY                  = arrowColour === '#000000' ? -73 : -73;
+
+
+    // Positioning and sizing variables used by this class.
+    var arrowYPos               = Math.floor((textHeight - arrowHeight) / 2); // Vertically centers the arrow based on height.
+    var textBackgroundHeight    = arrowHeight + (backgroundBorderWidth * 2); // Height of the background after padding has been added for border hover effect.
+
+
+    // Create container.
+    var linkContainer           = document.createElement('div');
+    linkContainer.setAttribute('id', ID);
+
+
+    // Create arrow.
+    var linkArrow               = document.createElement('div');
+    linkArrow.setAttribute('id', 'linkArrow' + _arrowCount);
+    linkArrow.setAttribute('class', 'linkArrow');
+
+    _arrowCount++;
+
+
+    // Add arrow and text to container.
+    linkContainer.appendChild(linkArrow)
+    linkContainer.appendChild(linkText.html)
+
+
+    // Style everything (font styling should be done on the text element in the main class).
+    superStyle(linkContainer, {
+        width:          textWidth +'px',
+        height:         textHeight + 'px',
+        cursor:         'pointer',
+        opacity:        0,
+        filter:         'alpha(opacity = ' + (0 * 100) + ')'
+    });
+
+    superStyle(linkArrow, {
+        position:       'absolute',
+        top:            arrowYPos + 'px',
+        left:           0,
+        width:          arrowWidth,
+        height:         arrowHeight,
+        background:     'url(' + SSM_ad_obj['ApCdnDomain'] + '/products/dynamicwebads/adserving/htmlbackup/jstemplate/images/shuffle/shuffle_arrows.png) no-repeat ' + arrowX + 'px ' + arrowY + 'px'
+    });
+
+    if (ie == 7) {
+        superStyle(linkArrow, {
+            backgroundColor: arrowBackgroundColor
+        });
+    }
+
+    superStyle(linkText.html, {
+        position:       'absolute',
+        top:            Math.round(arrowYPos - backgroundBorderWidth) + 'px',
+        left:           arrowWidth + arrowPadding - backgroundBorderWidth + 50,
+        width:          textWidth - arrowWidth - arrowPadding + 'px',
+        height:         textBackgroundHeight,
+        overflow:       'hidden',
+        whiteSpace:     'nowrap',
+        color:          arrowColour
+    });
+
+    superStyle(linkText.html.children[0],{
+        position:        'absolute',
+        top:             backgroundBorderWidth - 2 + 'px',
+        left:            0 + 'px',
+        height:          textBackgroundHeight,
+        paddingLeft:     backgroundBorderWidth,
+        paddingRight:    backgroundBorderWidth,
+        whiteSpace:      'nowrap',
+        overflow:       'hidden',
+        textOverflow:   'ellipsis',
+        opacity:        0,
+        filter:         'alpha(opacity = ' + (0 * 100) + ')'
+    });
+
+
+    // Stores some variables to be used by the class.
+    this.dom            = linkContainer;
+    this.id             = ID;
+    this.hoverColour    = backgroundHoverColour;
+
+    var self = this;
+
+
+    // Waits until linkContainer is added to DOM so we can find the correct position values.
+    executeOnLoad(linkContainer, function(node){
+        // Variables used for animation positioning.
+        _arrowStartX    = -10;
+        _arrowEndX      = 0;
+
+        _textStartX     = arrowWidth + arrowPadding - backgroundBorderWidth + 50;
+        _textEndX       = arrowWidth + arrowPadding - backgroundBorderWidth;
+    });
+
+
+    // The mouse events are added to the cell.
+    this.addMouseListeners();
+};
+
+
+// Extend the cell.
+arrowTextLink.prototype = new baseCell();
+
+// Change the constructor from cell to arrowTextLink.
+arrowTextLink.prototype.constructor = arrowTextLink;
+
+// Override hover function for the cell.
+arrowTextLink.prototype.hover = function(event) {
+    var event = event || window.event;
+    event.stopPropagation ? event.stopPropagation() : (event.cancelBubble=true);
+    target = (event.currentTarget) ? event.currentTarget : event.srcElement;
+
+    if (ie < 9) {
+        target.children[1].children[0].style.backgroundColor = this.hoverColour;
+
+        if (target.children[1].children[1]) {
+            target.children[1].children[1].style.backgroundColor = this.hoverColour;
+        }
+    }
+    else{
+        target.children[1].style.backgroundColor = this.hoverColour;
+    }
+
+    // Animate arrow position.
+    new timeAnimation(prev(target.children[1]), {left: '2px'}, 200);
+}
+
+// Override unHover function for the cell.
+arrowTextLink.prototype.unHover = function(event) {
+    var event = event || window.event;
+    event.stopPropagation ? event.stopPropagation() : (event.cancelBubble=true);
+    target = (event.currentTarget) ? event.currentTarget : event.srcElement;
+
+    if (ie < 9) {
+        target.children[1].children[0].style.backgroundColor = '';
+
+        if (target.children[1].children[1]) {
+            target.children[1].children[1].style.backgroundColor = '';
+        }
+    }
+    else{
+        target.children[1].style.backgroundColor = '';
+    }
+
+    // Animate arrow position.
+    new timeAnimation(prev(target.children[1]), {left: '0px'}, 200);
+}
+
+// Override focus function for the cell.
+arrowTextLink.prototype.focusState = function(event) {
+
+}
+
+// Override unFocus function for the cell.
+arrowTextLink.prototype.unFocusState = function(event) {
+
+}
+
+// Override animateIn function for the cell.
+arrowTextLink.prototype.animateIn = function(callback, delay, duration) {
+    var self = this;
+
+    // Animate arrows in.
+    setTimeout(function() {
+        new timeAnimation(id(self.id), {opacity: 1}, duration);
+        new timeAnimation(id(self.id).children[0], {left: _arrowEndX}, duration);
+    }, delay);
+
+    // Animate text out.
+    setTimeout(function() {
+        // Have to select bottom most child due to ie opacity inheritence issue.
+        new timeAnimation(id(self.id).children[1].children[0], {opacity: 1}, duration);
+
+        // Check for tinker text.
+        if (id(self.id).children[1].children[1]) {
+            new timeAnimation(id(self.id).children[1].children[1], {opacity: 1}, duration);
+        }
+
+        new timeAnimation(id(self.id).children[1], {left: _textEndX}, duration);
+    }, delay + duration);
+}
+
+// Override animateOut function for the cell.
+arrowTextLink.prototype.animateOut = function(callback, delay, duration) {
+    var self  = this;
+
+   // Animate arrows out.
+    setTimeout(function() {
+        new timeAnimation(id(self.id), {opacity: 0}, duration);
+        new timeAnimation(id(self.id).children[0], {left: _arrowStartX}, duration);
+    }, delay);
+
+    // Animate text in.
+    setTimeout(function() {
+        // Have to select bottom most child due to ie opacity inheritence issue.
+        new timeAnimation(id(self.id).children[1].children[0], {opacity: 0}, duration);
+
+        // Check for tinker text.
+        if (id(self.id).children[1].children[1]) {
+            new timeAnimation(id(self.id).children[1].children[1], {opacity: 0}, duration);
+        }
+
+        new timeAnimation(id(self.id).children[1], {left: _textStartX}, duration);
+    }, delay);
+}š
+œ      YiF¸YiF¸=ù£&YiF¸   ¥    :https://cdn.speedshiftmedia.com/products/dynamicwebads/adserving/htmlbackup/jstemplate/js/app/shuffle_squareCornerCta/classes/arrowTextLink_v2.js?bust=1500071607752 necko:classified 1 strongly-framed 1 security-info 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 request-method GET response-head HTTP/1.1 200 OK
+Content-Type: application/x-javascript
+Content-Length: 10313
+Date: Thu, 20 Apr 2017 18:53:47 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:22 GMT
+Etag: "31ac1d8f1dff061d878932597bf6efb2"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 12784
+X-Cache: Hit from cloudfront
+Via: 1.1 268e769f31ddc5887a8b3a085f826161.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: l1uuyNs8Wd_SZZPNByX37HG8P0gu5YHCxKFfsVxNUiDkGpZdt8kAPQ==
+ original-response-headers Content-Type: application/x-javascript
+Content-Length: 10313
+Connection: keep-alive
+Date: Thu, 20 Apr 2017 18:53:47 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:22 GMT
+Etag: "31ac1d8f1dff061d878932597bf6efb2"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 12784
+X-Cache: Hit from cloudfront
+Via: 1.1 268e769f31ddc5887a8b3a085f826161.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: l1uuyNs8Wd_SZZPNByX37HG8P0gu5YHCxKFfsVxNUiDkGpZdt8kAPQ==
+ uncompressed-len 0 net-response-time-onstart 230 net-response-time-onstop 230   (I

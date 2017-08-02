@@ -1,0 +1,368 @@
+/*
+*--------------------------------------------------------------------------------------------------------------------------------
+* A class used to create a textual link with an animated arrow beside it. A hover background colour can be added.               *
+*================================================================================================================================
+* ID                        (@string)   = The id attribute of the linksPanel.                                                   *
+* linkText1                 (@jsonItem) = The jsonItem of link text 1.                                                          *
+* linkText2                 (@jsonItem) = The jsonItem of link text 2.                                                          *
+* linkText3                 (@jsonItem) = The jsonItem of link text 3.                                                          *
+* panelWidth                (@number)   = The width of the arrowTextLink.                                                       *
+* panelHeight               (@number)   = The height of the arrowTextLink.                                                      *
+* sidePadding               (@number)   = The padding on the sides of the panel.                                                *
+* arrowWidth                (@number)   = The width of the arrow.                                                               *
+* arrowHeight               (@number)   = The height of the arrow.                                                              *
+* arrowPadding              (@number)   = The amount of padding between the arrow and the text.                                 *
+* arrowColour               (@string)   = The colour of the arrow and the text.                                                 *
+* arrowBackgroundColor      (@string)   = The background color of the arrow (see notes).                                        *
+* backgroundBorderWidth     (@number)   = The width of the space between the text and the background/border.                    *
+* backgroundHoverColour     (@string)   = The colour of the background/border.                                                  *
+* vertical                  (@boolean)  = Whether or not the links stack vertically                                             *
+*******************************************************<== NOTES ==>*************************************************************
+* If using a filter on a canvas element, arrowBackgroundColor must be set or you'll see a black halo in IE 7/8.                 *
+*
+*
+* @author                  Chris Brenner
+* @date                    Nov 19, 2013
+* @version                 1.0
+
+* @modify_by               Chris Brenner
+* @modify_date             May 1 2014
+
+* Updated May 1 2014 by Chris: Refactored class to use sprite images instead of canvas tag for arrows.
+*--------------------------------------------------------------------------------------------------------------------------------
+*/
+
+var linksPanel = function(ID, linkText1, linkText2, linkText3, panelWidth, panelHeight, sidePadding, arrowWidth, arrowHeight, arrowPadding, arrowColour, arrowBackgroundColor, backgroundBorderWidth, backgroundHoverColour, vertical) {
+    // Set default values.
+    vertical = vertical || false;
+
+
+    // Calculate number of links.
+    var numLinks = 0;
+
+    if (linkText1) {
+        numLinks++;
+    }
+
+    if (linkText2) {
+        numLinks++;
+    }
+
+    if (linkText3) {
+        numLinks++;
+    }
+
+
+    // Calculate average text widths.
+    var averageTextWidth    = (vertical) ? (panelWidth - (sidePadding * 2)) : (panelWidth - (sidePadding * (2 + numLinks - 1))) / numLinks;
+    var textHeight          = (vertical) ? Math.floor((panelHeight - (sidePadding * (2 + numLinks - 1))) / numLinks) : panelHeight;
+
+
+    // Create container.
+    var linksPanel          = document.createElement('div');
+    linksPanel.setAttribute('id', ID);
+
+
+    // Style container.
+    superStyle(linksPanel, {
+        position:           'relative',
+        left:               sidePadding,
+        width:              panelWidth - (sidePadding * 2),
+        height:             panelHeight,
+        opacity:            0,
+        filter:             'alpha(opacity = ' + (0 * 100) + ')'
+    });
+
+
+    // Create arrowTextLinks.
+    if (linkText1) {
+        var link1 = new arrowTextLink('url1Container', linkText1, averageTextWidth, textHeight, arrowWidth, arrowHeight, arrowPadding, arrowColour, arrowBackgroundColor, backgroundBorderWidth, backgroundHoverColour);
+        linksPanel.appendChild(link1.dom);
+        this.link1 = link1;
+    }
+
+    if (linkText2) {
+        var link2 = new arrowTextLink('url2Container', linkText2, averageTextWidth, textHeight, arrowWidth, arrowHeight, arrowPadding, arrowColour, arrowBackgroundColor, backgroundBorderWidth, backgroundHoverColour);
+        linksPanel.appendChild(link2.dom);
+        this.link2 = link2;
+    }
+
+    if (linkText3) {
+        var link3 = new arrowTextLink('url3Container', linkText3, averageTextWidth, textHeight, arrowWidth, arrowHeight, arrowPadding, arrowColour, arrowBackgroundColor, backgroundBorderWidth, backgroundHoverColour);
+        linksPanel.appendChild(link3.dom);
+        this.link3 = link3;
+    }
+
+
+    // Style link containers.
+    for(var i = 0; i < numLinks; i++) {
+        superStyle(linksPanel.children[i], {
+            position:       'absolute',
+            top:            0,
+            left:           ((averageTextWidth + sidePadding) * i) + 'px'
+        });
+    }
+
+
+    // Wait until linksPanel is in DOM so we can do work on the text field sizes and scrolling.
+    executeOnLoad(linksPanel, function(node){
+
+        // Get sizing variables.
+        var maxWidth                = (vertical) ? panelWidth - (sidePadding * 2) - arrowWidth - arrowPadding : (panelWidth - (sidePadding * (2 + numLinks - 1)) - (arrowWidth * numLinks) - (arrowPadding * numLinks)) / numLinks;
+        var maxCombinedWidth        = (vertical) ? maxWidth : maxWidth * numLinks;
+
+        if (linkText1) {
+            var currentText1Width   = (linkText1.html.children[0].offsetWidth > maxWidth) ? maxWidth : linkText1.html.children[0].offsetWidth;
+            var actualText1Width    = linkText1.html.children[0].offsetWidth;
+        }
+        else{
+            var currentText1Width   = 0;
+            var actualText1Width    = 0;
+        }
+
+        if (linkText2) {
+            var currentText2Width   = (linkText2.html.children[0].offsetWidth > maxWidth) ? maxWidth : linkText2.html.children[0].offsetWidth;
+            var actualText2Width    = linkText2.html.children[0].offsetWidth;
+        }
+        else{
+            var currentText2Width   = 0;
+            var actualText2Width    = 0;
+        }
+
+        if (linkText3) {
+            var currentText3Width   = (linkText3.html.children[0].offsetWidth > maxWidth) ? maxWidth : linkText3.html.children[0].offsetWidth;
+            var actualText3Width    = linkText3.html.children[0].offsetWidth;
+        }
+        else{
+            var currentText3Width   = 0;
+            var actualText3Width    = 0;
+        }
+
+
+        // Check if there is any space remaining that could be used to make links wider if they need it.
+        var combinedWidth           = currentText1Width + currentText2Width + currentText3Width;
+        var remainingWidth          = maxCombinedWidth - combinedWidth;
+        var overflow;
+
+        // Will use any available space in the links panel to widen links that are bigger than the initial maximum.
+        var newTextWidth1           = (linkText1) ? updateTextWidth(actualText1Width, maxWidth, remainingWidth, overflow, currentText1Width) : 0;
+        remainingWidth              -= (newTextWidth1 - currentText1Width);
+
+        var newTextWidth2           = (linkText2) ? updateTextWidth(actualText2Width, maxWidth, remainingWidth, overflow, currentText2Width) : 0;
+        remainingWidth              -= (newTextWidth2 - currentText2Width);
+
+        var newTextWidth3           = (linkText3) ? updateTextWidth(actualText3Width, maxWidth, remainingWidth, overflow, currentText3Width) : 0;
+        remainingWidth              -= (newTextWidth3 - currentText3Width);
+
+
+        // Find the largest text width for centering.
+        var textWidthArray          = [newTextWidth1, newTextWidth2, newTextWidth3];
+        textWidthArray.sort(function(a,b){return b-a});
+
+        // New X position to center links panel container.
+        var linksPanelContainerX    = (vertical) ? (panelWidth - (textWidthArray[0] + arrowWidth + arrowPadding)) / 2 : (panelWidth - (newTextWidth1 + newTextWidth2 + newTextWidth3 + (arrowWidth * numLinks) + (arrowPadding * numLinks) + (sidePadding * 2))) / 2 + 1;
+
+        // Set top and left position of each arrowTextLink.
+        var top                     = (vertical) ? sidePadding : 0;
+        var left                    = 0;
+
+
+        // Re-style links and containers with new sizes and positions.
+        superStyle(linksPanel, {
+            left:                   linksPanelContainerX + 'px'
+        });
+
+        if (linkText1) {
+            superStyle(parent(linkText1.html), {
+                top:                top + 'px',
+                left:               left + 'px',
+                width:              newTextWidth1 + arrowWidth + arrowPadding + 'px'
+            });
+
+            top                     += (vertical) ? textHeight + sidePadding : 0;
+            left                    += (vertical) ? 0 : newTextWidth1 + arrowWidth + arrowPadding + sidePadding;
+
+            superStyle(linkText1.html, {
+                width:              newTextWidth1 + 'px'
+            });
+
+            superStyle(linkText1.html.children[0], {
+                width:              newTextWidth1 + 'px'
+            });
+        };
+
+        if (linkText2) {
+            superStyle(parent(linkText2.html), {
+                top:                top + 'px',
+                left:               left + 'px',
+                width:              newTextWidth2 + arrowWidth + arrowPadding + 'px'
+            });
+
+            top                     += (vertical) ? textHeight + sidePadding : 0;
+            left                    += (vertical) ? 0 : newTextWidth2 + arrowWidth + arrowPadding + sidePadding;
+
+            superStyle(linkText2.html, {
+                width:              newTextWidth2 + 'px'
+            });
+
+            superStyle(linkText2.html.children[0], {
+                width:              newTextWidth2 + 'px'
+            });
+        };
+
+        if (linkText3) {
+            superStyle(parent(linkText3.html), {
+                top:                top + 'px',
+                left:               left + 'px',
+                width:              newTextWidth3 + arrowWidth + arrowPadding + 'px'
+            });
+
+            superStyle(linkText3.html, {
+                width:              newTextWidth3 + 'px'
+            });
+
+            superStyle(linkText3.html.children[0], {
+                width:              newTextWidth3 + 'px'
+            });
+        };
+    });
+
+
+    // Stores some variables to be used by the class.
+    this.dom = linksPanel;
+    this.id = ID;
+
+
+    // The mouse events are added to the linksPanel.
+    this.addMouseListeners();
+};
+
+/**
+ * This function will check to see if the text is wider than it's container
+ * and try to allot more space to it if possible.
+ *
+ * @param text                  The text field.
+ * @param maxWidth              The maximum width of each text field.
+ * @param remainingWidth        The remaining width that can be alloted.
+ * @param overflow              The amount the text field is larger than it's current width.
+ * @param currentTextWidth      The current width the text field has been given.
+ *
+ * @return                      The updated width of the text field.
+ *
+ */
+var updateTextWidth = function(text, maxWidth, remainingWidth, overflow, currentTextWidth) {
+    // If text field is larger than the maximum space and there is remaining space to allot...
+    if ((text > maxWidth) && (remainingWidth > 0)) {
+        // Check how much space the text field still needs to be fully seen.
+        overflow = text - maxWidth;
+
+        // Allot remaining space as needed.
+        if (overflow > remainingWidth) {
+            currentTextWidth += remainingWidth;
+        }
+        else {
+            currentTextWidth += overflow;
+        }
+    }
+
+    return currentTextWidth;
+}
+
+
+// Extend the cell.
+linksPanel.prototype = new baseCell();
+
+// Change the constructor from cell to linksPanel.
+linksPanel.prototype.constructor = linksPanel;
+
+// Override hover function for the cell.
+linksPanel.prototype.hover = function(event) {
+
+}
+
+// Override unHover function for the cell.
+linksPanel.prototype.unHover = function(event) {
+
+}
+
+// Override focus function for the cell.
+linksPanel.prototype.focusState = function(event) {
+
+}
+
+// Override unFocus function for the cell.
+linksPanel.prototype.unFocusState = function(event) {
+
+}
+
+// Override animateIn function for the cell.
+linksPanel.prototype.animateIn = function(callback, delay, duration) {
+    var self = this;
+
+    // Animate linksPanel in.
+    setTimeout(function() {
+        new timeAnimation(id(self.id), {opacity: 1}, duration);
+    }, delay);
+
+    // Call arrowTextLinks to animate in.
+    if (self.link1) {
+        self.link1.animateIn(null, 1000, 250);
+    }
+
+    if (self.link2) {
+        self.link2.animateIn(null, 1100, 250);
+    }
+
+    if (self.link3) {
+        self.link3.animateIn(null, 1200, 250);
+    }
+}
+
+// Override animateOut function for the cell.
+linksPanel.prototype.animateOut = function(callback, delay, duration) {
+    var self  = this;
+
+   // Animate linksPanel out.
+    setTimeout(function() {
+        new timeAnimation(id(self.id), {opacity: 0}, duration);
+    }, delay);
+
+    // Call arrowTextLinks to animate out.
+    if (self.link1) {
+        self.link1.animateOut(null, 200, 250);
+    }
+
+    if (self.link2) {
+        self.link2.animateOut(null, 100, 250);
+    }
+
+    if (self.link3) {
+        self.link3.animateOut(null, 0, 250);
+    }
+}˜œÄÎ3®      YiF¸YiF¸=ù£&YiF¸   ¢    :https://cdn.speedshiftmedia.com/products/dynamicwebads/adserving/htmlbackup/jstemplate/js/app/shuffle_squareCornerCta/classes/linksPanel_v2.js?bust=1500071607752 necko:classified 1 strongly-framed 1 security-info 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 request-method GET response-head HTTP/1.1 200 OK
+Content-Type: application/x-javascript
+Content-Length: 14099
+Date: Thu, 20 Apr 2017 18:53:47 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:26 GMT
+Etag: "93472a336618dbf70cdab52d2e7367a2"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 36049
+X-Cache: Hit from cloudfront
+Via: 1.1 0b3d659e10c138d010412baeedccd7a8.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: oNRzXSMzNA2zOSzeHbDES9xNNmrJKDnNWoes75T_4uKFHWu0-XsiHA==
+ original-response-headers Content-Type: application/x-javascript
+Content-Length: 14099
+Connection: keep-alive
+Date: Thu, 20 Apr 2017 18:53:47 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:26 GMT
+Etag: "93472a336618dbf70cdab52d2e7367a2"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 36049
+X-Cache: Hit from cloudfront
+Via: 1.1 0b3d659e10c138d010412baeedccd7a8.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: oNRzXSMzNA2zOSzeHbDES9xNNmrJKDnNWoes75T_4uKFHWu0-XsiHA==
+ uncompressed-len 0 net-response-time-onstart 143 net-response-time-onstop 145   7

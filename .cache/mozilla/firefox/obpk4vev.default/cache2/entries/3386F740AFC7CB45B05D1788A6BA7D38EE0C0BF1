@@ -1,0 +1,983 @@
+/*
+*--------------------------------------------------------------------------------------------------------------------------------
+* This is the main class for the Shuffle 300x600 HTML backup template.                                                          *
+*================================================================================================================================
+*******************************************************<== NOTES ==>*************************************************************
+* @author                  Chris Brenner
+* @date                    Nov 12, 2013
+* @version                 1.0
+
+* @modify_by               Paul Bourque
+* @modify_date             Sept 16 2016
+
+* Updated May 1 2014 by Chris: Refactored class to use sprite images instead of canvas tag for arrows.
+* Update Aug 20 2014 by Chris: Added secondary and tertiary text fields and updated cell positioning and sizing.
+*-------------------------------------------------------------------------------------------------------------------------------
+*/
+needs({version: 'v2', specialFiles: {multiSlider: '', gradients: 'v1', background: ''}, templateFiles: {shuffleCell: 'shuffle_squareCornerCta/classes/shuffleCell_v2.js', doubleHoverBackgroundArrow: 'shuffle_squareCornerCta/classes/doubleHoverBackgroundArrow_v2.js', linksPanel: 'shuffle_squareCornerCta/classes/linksPanel_v2.js', disclaimerPopUp: 'shuffle_squareCornerCta/classes/disclaimerPopUp_v2.js', arrowTextLink: 'shuffle_squareCornerCta/classes/arrowTextLink_v2.js'}}, function() {
+
+    // Define variable that will need to be used by the template.
+    var _json;
+    var _colours;
+    var _logoJson;
+    var _cellArray 	= [];
+    var _invArray 	= [];
+    var _scroller;
+    var _linksPanelContainer;
+
+    // Define the size and position values for each element.
+    var _linksWidth;
+    var _linksHeight;
+
+    var _logoMainWidth;
+    var _logoMainHeight;
+
+    var _logoFooterWidth;
+    var _logoFooterHeight;
+
+    var _scrollerWidth;
+    var _scrollerHeight;
+
+    var _cellPadding;
+    var _cellWidth;
+    var _cellHeight;
+
+    var _linksX;
+    var _linksY;
+
+    var _logoMainX;
+    var _logoMainY;
+
+    var _logoFooterX;
+    var _logoFooterY;
+
+    var _scrollerX;
+    var _scrollerY;
+
+    var _numCells;
+
+    // Disclaimer variables
+    var _disclaimerBtn;
+    var _disclaimer;
+    var _closeButton;
+
+	var _priceSlashFlag;
+
+    // Define which elements loaded in.
+    var _link1Loaded;
+    var _link2Loaded;
+    var _link3Loaded;
+    var _linkLoaded;
+    var _logoMainLoaded;
+    var _logoFooterLoaded;
+
+    // Timer variables.
+    var timerId;
+    var start;
+    var remaining;
+
+    // Other variables needed by this class.
+    var ssm_base        = SSM_BASE.createNew();
+
+    // Get the loaded json.
+    ssm_base.prepareData( function() {
+        initialize( this );
+    });
+
+    // Creating a new stage function it take in three parameters first is the backgroundColor, second bordercolor, and the third is the border size, when
+    // none are specified the background of ssm_ad_container will be white the border black and one pixel.
+    var Stage           = new stage();
+
+    // Calling a subfunction of the stage to add a preloader for the time while the ad is being created.
+    Stage.addPreloader();
+
+    /**
+     * Once the json has been loaded it will be ready to use and the ad can be initialized at this point the colors will be loaded in and we can change the
+     * background color of the 'stage' or color and size of the border
+     */
+    var initialize = function( ad_data) {
+
+        // Theres a public storage of the json object as soon as its loaded so every file can get to it as it needs it.
+        _json           = SSM_BASE.GlobalJson.get;
+        _colours        = ad_data.colors;
+
+        // Set up the Intro Loader which will load and track jpegs that will be loaded for intro.
+        var json        = _json;
+        var callback    = parseInventoryJson;
+        var version     = 'v2'
+        new IntroLoader(json, callback, version);
+
+        // Once the basic prep of the ad is done we can start parsing the json in this case the Inventory.
+       // parseInventoryJson();
+    }
+
+    /**
+     * This function will go throught the json and create the jsonItems that are needed for this ad.
+     */
+    var parseInventoryJson = function() {
+
+        // Loop through the inventory items.
+        for(var i in _json['items']['group'][0]['item']) {
+
+            _disclaimer      = new jsonItem('text'   ,'disclaimerText');
+            _disclaimerBtn   = new jsonItem('text'   ,'disclaimerBtn');
+            _closeButton     = new jsonItem('text'   ,'closeButton');
+
+            // Get user input photo index number to use for primary image.
+            var usePhotoIndex       = _json['usePhotoIndex'].value;
+            var count               = _json['items']['group'][0]['item'][i]['primaryPhoto']['photo'].length;
+            var usePhotoIndex       = (isValid(usePhotoIndex) && (parseInt(usePhotoIndex) <= count) && (parseInt(usePhotoIndex) > 0)) ? (parseInt(usePhotoIndex) - 1) : 0;
+
+            // Creates an empty object that will hold the jsonItems needed for the cell.
+            var jsonObj             = {};
+
+            // Store the jsonItems in the object.
+            jsonObj.photo           = new jsonItem('photos',    'primaryPhoto',     'item', i, usePhotoIndex, '142x107');
+            jsonObj.title           = new jsonItem('text',      'title',            'item', i);
+            jsonObj.secondaryTitle  = new jsonItem('text',      'secondaryTitle',   'item', i);
+            jsonObj.tertiaryTitle   = new jsonItem('text',      'tertiaryTitle',    'item', i);
+            jsonObj.price           = new jsonItem('text',      'price',            'item', i);
+            jsonObj.clickthrough    = new jsonItem('text',      'clickthrough',     'item', i);
+
+            // Add tracking to the jsonItems.
+            jsonObj.photo.addTracking('EXTCLICK',           jsonObj.clickthrough.url);
+            jsonObj.title.addTracking('EXTCLICK',           jsonObj.clickthrough.url);
+            if (isValid(jsonObj.secondaryTitle.value)) {
+                jsonObj.secondaryTitle.addTracking('EXTCLICK',  jsonObj.clickthrough.url);
+            }
+            if (isValid(jsonObj.tertiaryTitle.value)) {
+                jsonObj.tertiaryTitle.addTracking('EXTCLICK',   jsonObj.clickthrough.url);
+            }
+            jsonObj.price.addTracking('EXTCLICK',           jsonObj.clickthrough.url);
+            jsonObj.clickthrough.addTracking('EXTCLICK',    jsonObj.clickthrough.url, true);
+
+            // Place the objects into an array.
+            _cellArray.push(jsonObj);
+        }
+
+        buildAd();
+    }
+
+    /**
+     * This function will determine which components loaded in and their positioning values.
+     */
+    var buildAd = function() {
+        // Set background and border color of stage.
+        var borderColour = _colours['border'] ? _colours['border'] : '#000000';
+
+        superStyle(id('ssm_ad_container'), {
+            backgroundColor:        _colours['background'],
+            borderColor:            borderColour
+        });
+
+        // Determine which elements loaded.
+        _link1Loaded                = (_json['url1']) && isValid(_json['url1'].value);
+        _link2Loaded                = (_json['url2']) && isValid(_json['url2'].value);
+        _link3Loaded                = (_json['url3']) && isValid(_json['url3'].value);
+        _linkLoaded                 = (_link1Loaded || _link2Loaded || _link3Loaded)
+        _logoMainLoaded             = (_json['logoMain']) && isValid(_json['logoMain'].value);
+        _logoFooterLoaded           = (_json['logoFooter']) && isValid(_json['logoFooter'].value);
+
+        _disclaimerLoaded           = (_json['disclaimerText']) && isValid(_json['disclaimerText'].value);
+
+		//flag that will determine if price needs to be slashed out
+		_priceSlashFlag = (_json['priceSlashFlag'])?(_json['priceSlashFlag'].value==='1'):false;
+
+        // Set default number of cells.
+        _numCells                   = 4;
+
+        // Add more cells depending on what loaded in.
+        if (!_logoMainLoaded) {
+            _numCells++
+        }
+        if (!_link1Loaded && !_link2Loaded && !_link3Loaded && !_logoFooterLoaded) {
+            _numCells++
+        }
+
+        // Determine the size and position of each element.
+        _linksWidth                 = 298;
+        _linksHeight                = (_linkLoaded) ? 20 : 0;
+
+        _logoMainWidth              = 300;
+        _logoMainHeight             = (_logoMainLoaded) ? 90 : 0;
+
+        _logoFooterWidth            = 300;
+        _logoFooterHeight           = (_logoFooterLoaded) ? 70 : 0;
+
+        var arrowSpace              = 18; // Space that arrows and arrow padding will take up.
+        var noFooterPadding         = (!_link1Loaded && !_link2Loaded && !_link3Loaded && !_logoMainLoaded && !_logoFooterLoaded) ? 7 : 8; // Padding that only applies if there is no footer to give spacing between slider and bottom of stage.
+        var sliderBottomPadding     = 7;  // Padding between slider and footer.
+
+        _scrollerWidth              = 280;
+        _scrollerHeight             = (_logoFooterLoaded) ? 598 - _linksHeight - _logoMainHeight - _logoFooterHeight - sliderBottomPadding - arrowSpace : 598 - _linksHeight - _logoMainHeight - _logoFooterHeight - arrowSpace - noFooterPadding;
+
+
+        _cellPadding                = 9;
+        _cellWidth                  = _scrollerWidth - 2;
+        _cellHeight                 = Math.floor(((_scrollerHeight - (_cellPadding * (_numCells - 1))) / _numCells));
+
+        _linksX                     = 0;                                                // Padding from edge of template.
+        _linksY                     = 0;                                                // Top orientation.
+
+        _logoMainX                  = 0;                                                // Determined by logo function.
+        _logoMainY                  = _linksHeight;                                     // Top orientation.
+
+        _logoFooterX                = 0;                                                // Determined by logo function.
+        _logoFooterY                = 0;                                                // Bottom orientation.
+
+        _scrollerX                  = 9;                                                // Padding from edge of template.
+        _scrollerY                  = _linksHeight + _logoMainHeight + arrowSpace;      // Top orientation.
+
+
+        // Start building the links panel if any of the links have a value.
+        if (_linkLoaded) {
+            buildLinks(_linksWidth, _linksHeight);
+        }
+        // Starts building the main logo if it has a value.
+        else if (_logoMainLoaded) {
+            buildLogo(_logoMainWidth, _logoMainHeight);
+        }
+        // Starts building the footer logo if it has a value.
+        else if (_logoFooterLoaded) {
+            buildFooterLogo(_logoFooterWidth, _logoFooterHeight)
+        }
+        // Starts building the cells.
+        else {
+            buildCells(_cellWidth, _cellHeight);
+        }
+    }
+
+    /**
+     * This function will create the links panel.
+     *
+     * @param width                     The width of the links panel.
+     * @param height                    The height of the links panel.
+     *
+     */
+    var buildLinks = function(width, height) {
+        var panelID             = 'linksPanelContainer';
+        var backgroundColor     = _colours['linkBackground'];
+
+        // Create a style object for the links.
+        var linksStyle = {
+            position:      'absolute',
+            top:           _linksY,
+            left:          _linksX,
+            overflow:      'hidden',
+            zIndex:        2,
+            opacity:       0,
+            filter:        'alpha(opacity = ' + (0 * 100) + ')'
+        };
+
+        // Build the background container.
+        var panelContainer = new background(panelID, '', linksStyle, width, height, backgroundColor);
+
+        // Add the background container to the stage.
+        id('ssm_ad_container').appendChild(panelContainer);
+
+
+        // Variables used to build the panel links.
+        var panelWidth                      = width;
+        var panelHeight                     = height;
+        var sidePadding                     = 5;
+
+        var arrowWidth                      = 5;
+        var arrowHeight                     = 8;
+        var arrowPadding                    = 5;
+        var arrowColour                     = (isColorLight(backgroundColor.replace('#', '0x'), 155)) ? ('#000000') : ('#ffffff');
+        var arrowBackgroundColor            = backgroundColor;
+
+        var backgroundBorderWidth           = 2;
+        var backgroundHoverColour           = _colours['linkHover'];
+        var vertical                        = false;
+
+
+        // Create and style text. All other parameters handled inside class.
+        var linkText1;
+        var linkText2;
+        var linkText3;
+
+        if (_link1Loaded) {
+            linkText1 = new jsonItem('text', 'url1');
+
+            if ((ie == 7) || (ie == 8)){
+                superStyle(linkText1.html, {
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '10px',
+                    letterSpacing:      '0.5px'
+                });
+            }
+            else{
+                superStyle(linkText1.html, {
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '11px',
+                    letterSpacing:      '0.5px'
+                });
+            }
+        }
+        else {
+            linkText1 = null;
+        }
+
+        if (_link2Loaded){
+            linkText2 = new jsonItem('text', 'url2');
+
+            if ((ie == 7) || (ie == 8)){
+                superStyle(linkText2.html, {
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '10px',
+                    letterSpacing:      '0.5px'
+                });
+            }
+            else{
+                superStyle(linkText2.html, {
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '11px',
+                    letterSpacing:      '0.5px'
+                });
+            }
+        }
+        else {
+            linkText2 = null;
+        }
+
+        if (_link3Loaded) {
+            linkText3 = new jsonItem('text', 'url3');
+
+            if ((ie == 7) || (ie == 8)){
+                superStyle(linkText3.html, {
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '10px',
+                    letterSpacing:      '0.5px'
+                });
+            }
+            else{
+                superStyle(linkText3.html, {
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '11px',
+                    letterSpacing:      '0.5px'
+                });
+            }
+        }
+        else {
+            linkText3 = null;
+        }
+
+
+        // Create links panel.
+        _linksPanelContainer = new linksPanel('linksPanel', linkText1, linkText2, linkText3, panelWidth, panelHeight, sidePadding, arrowWidth, arrowHeight, arrowPadding, arrowColour, arrowBackgroundColor, backgroundBorderWidth, backgroundHoverColour, vertical);
+
+
+        // Add panel to stage.
+        panelContainer.appendChild(_linksPanelContainer.dom);
+
+
+        // Add link tracking.
+        if (_link1Loaded) {
+            new tracking.createNew(id('url1'), 'EXTCLICK', linkText1.url, linkText1.value);
+        }
+
+        if (_link2Loaded) {
+            new tracking.createNew(id('url2'), 'EXTCLICK', linkText2.url, linkText2.value);
+        }
+
+        if (_link3Loaded) {
+            new tracking.createNew(id('url3'), 'EXTCLICK', linkText3.url, linkText3.value);
+        }
+
+
+        // Starts building the main logo if it has a value.
+        if (_logoMainLoaded) {
+            buildLogo(_logoMainWidth, _logoMainHeight);
+        }
+        // Starts building the footer logo if it has a value.
+        else if (_logoFooterLoaded) {
+            buildFooterLogo(_logoFooterWidth, _logoFooterHeight)
+        }
+        // Starts building the cells.
+        else {
+            buildCells(_cellWidth, _cellHeight);
+        }
+    }
+
+    /**
+     * This function will create the main logo.
+     *
+     * @param width                     The width of the main logo.
+     * @param height                    The height of the main logo.
+     *
+     */
+    var buildLogo = function(width, height) {
+
+        // Create a style object for the main logo.
+        var logoStyle = {
+            width:          width,
+            height:         height,
+            position:       'absolute',
+            top:            _logoMainY,
+            cursor:         'pointer',
+            opacity:        0,
+            filter:         'alpha(opacity = ' + (0 * 100) + ')'
+        };
+
+        // The callback function for after the logo has been loaded.
+        var callback = function() {
+            // Move logo 1px to the left to move it's edge behind the border and avoid resizing.
+            var logoX = parseInt(id('logoMain').children[0].style.left);
+            id('logoMain').children[0].style.left = logoX  - 1 + 'px';
+
+            // Starts building the popUp if it has a value.
+            if (_disclaimerLoaded){
+                superStyle(_disclaimerBtn.html, {
+                    position:           'absolute',
+                    bottom:                0 + 'px',
+                    right:               0 + 'px',
+                    width:              60 + 'px',
+                    height:             10 + 'px',
+                    fontFamily:         'Arial, Helvetica, sans-serif',
+                    fontSize:           '8px',
+                    lineHeight:         '12px',
+                    color:              _colours['textButtonHover'],
+                    letterSpacing:      '1px',
+                    zIndex:             20,
+                    textAlign:      'center'
+                });
+
+
+                id('ssm_ad_container').appendChild(_disclaimerBtn.html);
+
+                buildPopUp();
+
+               //  Event to display popUp when disclaimer text is clicked
+                addEvent(id('disclaimerBtn'), 'click', function(){
+                    superStyle (id('popUp'),  {                    
+                        visibility:    'visible'   
+                    })              
+                });
+            }
+
+            // Starts building the footer logo if it has a value.
+            if (_logoFooterLoaded) {
+                buildFooterLogo(_logoFooterWidth, _logoFooterHeight)
+            }
+            // Starts building the cells.
+            else {
+                buildCells(_cellWidth, _cellHeight);
+            }
+        };
+
+        // Create the logo object.
+        logoStyle = new logo('logoMain', logoStyle, callback);
+
+        // Add tracking to the logo.
+        logoStyle.jsonItem.addTracking('EXTCLICK', name.url);
+    }
+
+    /**
+     * This function will create the footer logo.
+     *
+     * @param width                     The width of the footer logo.
+     * @param height                    The height of the footer logo.
+     *
+     */
+    var buildFooterLogo = function(width, height) {
+
+        // Create a style object for the footer logo.
+        var logoStyle = {
+            width:          width,
+            height:         height,
+            position:       'absolute',
+            bottom:         _logoFooterY,
+            cursor:         'pointer',
+            opacity:        0,
+            filter:         'alpha(opacity = ' + (0 * 100) + ')'
+        };
+
+        // The callback function for after the logo has been loaded.
+        var callback = function() {
+            // Move logo 1px to the left to move it's edge behind the border and avoid resizing.
+            var logoX = parseInt(id('logoFooter').children[0].style.left);
+            id('logoFooter').children[0].style.left = logoX  - 1 + 'px';
+
+            // Start building cells.
+            buildCells(_cellWidth, _cellHeight);
+        };
+
+        // Create the logo object.
+        logoStyle = new logo('logoFooter', logoStyle, callback);
+
+        // Add tracking to the logo.
+        logoStyle.jsonItem.addTracking('EXTCLICK', name.url);
+    }
+
+    /**
+     * This function creates the popup and contains the disclaimer text
+     */
+     var buildPopUp = function() {
+        var horizPadding        = 10;
+        var vertPadding         = 60;
+        var disclaimerTextSize  = 12;
+        var positionLeft        = false;
+
+        // Calls and builds the popUp
+        var popUp = new disclaimerPopUp (_disclaimer, 'closeButton', 300, 600, horizPadding, vertPadding, disclaimerTextSize, 0, positionLeft);
+
+        // Adds the popUp to the stage
+        id('ssm_ad_container').appendChild(popUp.dom);
+
+        // Set tracking for the close button and share with the black background
+        new tracking.createNew(id('closeButton'), 'ENGAGECLICK');
+        popUp.share();
+
+        // Events to close the popUp
+        addEvent(id('closeButton'), 'click', function(){
+                superStyle (id('popUp'),  {
+                    visibility:    'hidden'   
+                })              
+            });
+        addEvent(id('popUp').children[0], 'click', function(){
+                    superStyle (id('popUp'),  {
+                    visibility:    'hidden'  
+                })
+            }, false);
+
+        // Events to add effects of hovering on the Close Button
+        addEvent(id('closeButton'), 'mouseenter', function(event){
+                superStyle (id('closeButton').children[1],  {
+                    opacity:        1,
+                    visibility:         'alpha(opacity = 100)'  
+                })              
+            }, false);
+        addEvent(id('closeButton'), 'mouseleave', function(event){
+                superStyle (id('closeButton').children[1],  {
+                    opacity:        .8,
+                    visibility:         'alpha(opacity = 80)'  
+                })              
+            }, false);
+     }  
+
+    /**
+     * This function will create the cells.
+     *
+     * @param width                     The width of the cells.
+     * @param height                    The height of the cells.
+     *
+     */
+    var buildCells = function(width, height) {
+        var vertical                = false;
+        var imgRatio                = width * .450;
+        var bgColour                = _colours['cellBackground'];
+        var titlePriceColour        = _colours['cellText'];
+        var btnColour               = _colours['button'];
+        var btnHoverColour          = _colours['textButtonHover'];
+        var borderColour            = _colours['border'];
+        var priceColour             = _colours['price'];
+
+        // Loop through the Array that is holding the objects made out of the jsonItems.
+        for(var i in _cellArray) {
+
+            // Create a cell and push it into a different array.
+            var cell = new shuffleCell( i,
+                                        _cellArray[i].photo,
+                                        _cellArray[i].title,
+                                        _cellArray[i].secondaryTitle,
+                                        _cellArray[i].tertiaryTitle,
+                                        _cellArray[i].price,
+                                        _cellArray[i].clickthrough,
+                                        width,
+                                        height,
+                                        imgRatio,
+                                        bgColour,
+                                        titlePriceColour,
+                                        btnColour,
+                                        btnHoverColour,
+                                        borderColour,
+                                        vertical,
+                                        null,
+                                        priceColour,
+				   						_priceSlashFlag	);
+            _invArray.push(cell);
+        }
+
+        // Once all the cells are made we are ready to build the scroller.
+        buildScroller(_scrollerWidth, _scrollerHeight, _numCells);
+    }
+
+    /**
+     * This function will create the scroller.
+     *
+     * @param width                     The width of the slider.
+     * @param height                    The height of the slider.
+     * @param numCells                  The number of cells in the slider.
+     *
+     */
+    var buildScroller = function(width, height, numCells) {
+        // Define the properties needed by the scroller.
+        var visible                             = numCells;
+        var slideDuration                       = 500;
+        var cloning                             = true;
+        var cellSpacingHeight                   = _cellHeight + _cellPadding;
+        var cellSpacingWidth                    = _cellWidth + (_cellPadding * 2);
+
+
+        // Define the properties needed by both arrows.
+        // Arrow backgrounds.
+        var arrowBackgroundWidth                = 30;
+        var arrowBackgroundHeight               = 14;
+        var arrowBackgroundRoundingPrev         = '5px 0px 0px 0px';
+        var arrowBackgroundRoundingNext         = '0px 5px 0px 0px';
+        var arrowBackgroundColourArray          = [_colours['arrowBackgroundCellBorder'], lightenDarkenColor2(_colours['arrowBackgroundCellBorder'], 4), lightenDarkenColor2(_colours['arrowBackgroundCellBorder'], -15)];
+
+        var arrowPadding                        = 2;
+        var arrowColour                         = isColorLight(_colours['arrowBackgroundCellBorder'].replace('#', '0x')) ? 'black' : 'white';
+
+        // Arrows.
+        var arrowWidth                          = 10;
+        var arrowHeight                         = 9;
+        var arrowOpacity                        = 1;
+        var arrowHoverOpacity                   = 1;
+        var arrowPrevX                          = arrowColour === 'black' ? -21 : -21;
+        var arrowPrevY                          = arrowColour === 'black' ? -20 : -1;
+        var arrowNextX                          = arrowColour === 'black' ? -1 : -1;
+        var arrowNextY                          = arrowColour === 'black' ? -20 : -1;
+
+
+        // The positions array for the slider (note that you need two position on each side of the visible cells).
+        var pos = [];
+
+        for (var a = 0; a < numCells; a++) {
+            pos.push({top: (cellSpacingHeight * a) + 'px',       left: -(cellSpacingWidth * 2) + 'px',    opacity: '1',   animateOut: '',     EASING: 'EASE_OUT_CUBIC',       placeHolder: ''});      // Placeholder cells.
+        }
+
+        for (var b = 0; b < numCells; b++) {
+            pos.push({top: (cellSpacingHeight * b) + 'px',       left: -(cellSpacingWidth * 1) + 'px',    opacity: '1',   animateOut: '',     EASING: 'EASE_OUT_CUBIC'});                             // Placeholder cells.
+        }
+
+        for (var c = 0; c < numCells; c++) {
+            pos.push({top: (cellSpacingHeight * c) + 'px',       left: (cellSpacingWidth * 0) + 'px',     opacity: '1',   animateIn: '400',   EASING: 'EASE_OUT_CUBIC'});                             // Interactive cells.
+        }
+
+        for (var d = 0; d < numCells; d++) {
+            pos.push({top: (cellSpacingHeight * d) + 'px',       left: (cellSpacingWidth * 1) + 'px',     opacity: '1',   animateOut: '',     EASING: 'EASE_OUT_CUBIC'});                             // Placeholder cells.
+        }
+
+        for (var e = 0; e < numCells; e++) {
+            pos.push({top: (cellSpacingHeight * e) + 'px',       left: (cellSpacingWidth * 2) + 'px',     opacity: '1',   animateOut: '',     EASING: 'EASE_OUT_CUBIC',       placeHolder: ''});      // Placeholder cells.
+        }
+
+
+        // The arrow positions array.
+        var arrowPos = {
+            prev: {top:  -(arrowBackgroundHeight + arrowPadding) + 'px',    right: 0 + arrowBackgroundWidth + arrowPadding + 'px'},
+            next: {top:  -(arrowBackgroundHeight + arrowPadding) + 'px',    right: '0px'}
+        };
+
+
+        // Create two arrows with the class 'arrow' and ids 'prev'/ 'next', with rotation of 270 deg for prev and 90 deg for next.
+        var prevArrow   = new doubleHoverBackgroundArrow('prev', 'arrowsID', arrowBackgroundWidth, arrowBackgroundHeight, arrowWidth, arrowHeight, arrowBackgroundRoundingPrev, arrowBackgroundColourArray, arrowOpacity, arrowHoverOpacity, arrowPrevX, arrowPrevY);
+        var nextArrow   = new doubleHoverBackgroundArrow('next', 'arrowsID', arrowBackgroundWidth, arrowBackgroundHeight, arrowWidth, arrowHeight, arrowBackgroundRoundingNext, arrowBackgroundColourArray, arrowOpacity, arrowHoverOpacity, arrowNextX, arrowNextY);
+
+        // Create the slider.
+        _scroller = new slider(width, height, _invArray, pos, nextArrow, prevArrow, arrowPos, visible, slideDuration, cloning, numCells);
+
+        // Additional scroller styling.
+        // Remove pre-defined overflow: none so arrows are visible since they are positioned outside of the slider.
+        superStyle(parent(id('innerScroller')), {
+            overflow:    'visible'
+        });
+
+        superStyle(id('innerScroller'), {
+            opacity:    0,
+            filter:     'alpha(opacity = ' + (0 * 100) + ')'
+        });
+
+        // Position the slider.
+        _scroller.x(_scrollerX + 'px');
+        _scroller.y(_scrollerY + 'px');
+
+        // Set the scroll delay for the slider.
+        var cellScrollDelay = _json['cellScrollDelay'].value;
+        cellScrollDelay = (isValid(cellScrollDelay) && cellScrollDelay != '0') ? (parseInt(cellScrollDelay) * 1000) : 4000;
+        _scroller.scrollDelay(cellScrollDelay);
+
+        // If there is only 1 inventory item arrows won't be created.
+        if (_invArray.length != 1) {
+            // Variables to animate the arrows on hover.
+            var animationDistance       = 3;
+
+            var initialLeft             = (arrowBackgroundWidth - arrowWidth) / 2;
+            var newLeft                 = initialLeft + animationDistance;
+
+            // Set arrows to no opacity for animate in.
+            superStyle(id('prev'), {
+                opacity:            0,
+                filter:             'alpha(opacity = ' + 0 + ')'
+            });
+
+            superStyle(id('next'), {
+                opacity:            0,
+                filter:             'alpha(opacity = ' + 0 + ')'
+            });
+
+            // Add arrow tracking.
+            new tracking.createNew(id('prev'), 'ENGAGECLICK');
+            new tracking.createNew(id('next'), 'ENGAGECLICK');
+
+            // Prev arrow hover animations.
+            addEvent(id('prev'), 'mouseenter', function(){
+                new timeAnimation(id('prev'), {width: arrowBackgroundWidth + animationDistance + 'px'}, 150);
+            });
+
+            addEvent(id('prev'), 'mouseleave', function(){
+                new timeAnimation(id('prev'), {width: arrowBackgroundWidth + 'px'}, 150);
+            });
+
+            addEvent(id('next'), 'mouseenter', function(){
+                new timeAnimation(id('next'), {width: arrowBackgroundWidth + animationDistance + 'px', right: -animationDistance + 'px'}, 150);
+                new timeAnimation(id('next').children[0], {left: newLeft + 'px'}, 150);
+            });
+
+            addEvent(id('next'), 'mouseleave', function(){
+                new timeAnimation(id('next'), {width: arrowBackgroundWidth + 'px', right: 0}, 150);
+                new timeAnimation(id('next').children[0], {left: initialLeft}, 150);
+            });
+        }
+
+        // Ad is ready to run.
+        runAd();
+    }
+
+    /**
+     * This function will animate the ad components in.
+     */
+    var runAd = function() {
+        // Remove the preloader because everything is in position.
+        Stage.removePreloader();
+
+        // Animate links' background in.
+        if (_linkLoaded) {
+            var linkDelay       = 500;
+            var linkDuration    = 500;
+
+            setTimeout(function() {
+                new timeAnimation(id('linksPanelContainer'), {opacity: 1}, linkDuration);
+            }, linkDelay);
+
+            // Animate links in.
+            _linksPanelContainer.animateIn(null, linkDelay, linkDuration);
+
+            // Only start animation of linksPanel if refresh speed is set up and not set to 0 (0 can be used to turn it off by user).
+            if (_json['urlPanelRefreshSpeed'] && parseInt(_json['urlPanelRefreshSpeed'].value) != 0 && mainAnimationDelay != -1) {
+                var urlPanelRefreshSpeed = _json['urlPanelRefreshSpeed'].value;
+
+                animateLinksOut(urlPanelRefreshSpeed, linkDelay, linkDuration);
+            }
+        }
+
+
+        // Animate logoMain in.
+        if (_logoMainLoaded) {
+            setTimeout(function() {
+                // Temp fix while we get better image loading event handling.
+                if (id('logoMain').children[0].offsetWidth) {
+                    centerDiv(id('logoMain').children[0]);
+                }
+                else {
+                    id('logoMain').children[0].style.top = 0;
+                    id('logoMain').children[0].style.left = 0;
+                }
+
+                new timeAnimation(id('logoMain'), {opacity: 1}, 750);
+            }, 1000);
+        }
+
+
+        // Animate logoFooter in.
+        if (_logoFooterLoaded) {
+            setTimeout(function() {
+                // Temp fix while we get better image loading event handling.
+                if (id('logoFooter').children[0].offsetWidth) {
+                    centerDiv(id('logoFooter').children[0]);
+                }
+                else {
+                    id('logoFooter').children[0].style.top = 0;
+                    id('logoFooter').children[0].style.left = 0;
+                }
+
+                new timeAnimation(id('logoFooter'), {opacity: 1}, 750);
+            }, 1000);
+        }
+
+
+        // Animate slider in.
+        setTimeout(function() {
+            new timeAnimation(id('innerScroller'), {opacity: 1}, 200);
+        },  1500);
+
+        // If there is only 1 inventory item arrows won't be created and scrolling won't be necessary.
+        if (_invArray.length != 1) {
+            setTimeout(function() {
+                new timeAnimation(id('prev'), {opacity: 1}, 200);
+                new timeAnimation(id('next'), {opacity: 1}, 200);
+            }, 1500);
+
+
+            // Start auto scrolling.
+            _scroller.startAuto();
+        };
+    }
+
+    /**
+     * This function will animate the linksPanel out.
+     *
+     * @param urlPanelRefreshSpeed      The xml value indicating how long should pass between each animate in and out (in seconds).
+     * @param linkDelay                 The delay passed to animateIn and animateOut.
+     * @param linkDuration              The duration passed to animateIn and animateOut.
+     *
+     */
+    var animateLinksOut = function(urlPanelRefreshSpeed, linkDelay, linkDuration) {
+        var linksPanelAnimateDelay = (isValid(urlPanelRefreshSpeed) && !isNaN(parseInt(urlPanelRefreshSpeed))) ? parseInt(urlPanelRefreshSpeed) : 10;
+
+        // Start new timer.
+        timer = new Timer(function() {
+            if (mainAnimationDelay != -1) {
+                // Call function to animate linksPanel out.
+                _linksPanelContainer.animateOut(null, linkDelay, linkDuration);
+
+                // Call function to animate linksPanel in with delay to allow animateOut to run fully.
+                setTimeout(function() {
+                    animateLinksIn(urlPanelRefreshSpeed, linkDelay, linkDuration);
+
+                }, linkDelay + linkDuration);
+            };
+        }, linksPanelAnimateDelay * 1000);
+
+        // Add event listeners to stop the linksPanel animation on mouse over.
+        addEvent(id('linksPanelContainer'), 'mouseenter', function(){
+            timer.pause()
+        });
+
+        addEvent(id('linksPanelContainer'), 'mouseleave', function(){
+            timer.resume()
+        });
+    }
+
+    /**
+     * This function will animate the linksPanel in.
+     *
+     * @param urlPanelRefreshSpeed      The xml value indicating how long should pass between each animate in and out (in seconds).
+     * @param linkDelay                 The delay passed to animateIn and animateOut.
+     * @param linkDuration              The duration passed to animateIn and animateOut.
+     *
+     */
+    var animateLinksIn = function(urlPanelRefreshSpeed, linkDelay, linkDuration) {
+        // Remove event listeners.
+        removeEvent(id('linksPanelContainer'), 'mouseenter', function(){
+            timer.pause()
+        });
+
+        removeEvent(id('linksPanelContainer'), 'mouseleave', function(){
+            timer.resume()
+        });
+
+        window.clearTimeout(timerId);
+
+        // Animate links panel back in.
+        _linksPanelContainer.animateIn(null, linkDelay, linkDuration);
+
+        // Set timer to call next animate out function.
+        setTimeout(function() {
+            if (mainAnimationDelay != -1) {
+                animateLinksOut(urlPanelRefreshSpeed, linkDelay, linkDuration);
+            };
+        }, (linkDelay + linkDuration) * 2);
+    }
+
+    /**
+     * This function will create a new timer that can be paused and resumed.
+     *
+     * @param callback                  The callback function to run on completion.
+     * @param delay                     The delay before running the callback function.
+     *
+     */
+    function Timer(callback, delay) {
+        // Set variables used by function.
+        timerId, start, remaining = delay;
+
+        // Allows one to pause the timer.
+        this.pause = function() {
+            window.clearTimeout(timerId);
+            remaining -= new Date() - start;
+        };
+
+        // Allows one to resume the timer.
+        this.resume = function() {
+            window.clearTimeout(timerId);
+            start = new Date();
+            timerId = window.setTimeout(callback, remaining);
+        };
+
+        // Autostart the timer each time it's called.
+        this.resume();
+    }
+});
+
+var TRACK = function (t) {
+    console.log('%c' + 'Welcome to HTML track tester version 1.0!', 'color:' + '#c41a16');
+    console.log('%c' + "To check vars tracking by itself call TRACK(0) or TRACK('vars').", 'color:' + '#c41a16');
+    console.log('%c' + 'To check regular tracking by itself call TRACK(1).' , 'color:' + '#c41a16');
+    console.log('%c' + 'To manually enter the amount of click types call testTrack(ext_inv, ext_non, engage, expand, intro, prev).', 'color:' + '#c41a16');
+    console.log('');
+
+    if (typeof t == 'string') {
+        t = t.toUpperCase();
+    }
+    
+    // Test both vars and regular tracking.
+    if (t == undefined) {
+        console.log('%c' + SSM_BASE.run.varsCheck(), 'color:' + '#c41a16');
+
+        console.log(''); // Line break.
+
+        // (EXT_INV, EXT_NON, ENGAGE, EXPAND, INTRO, PREV)
+        console.log('%c' + testTrack(6, 5, 2, 0, 0, 0), 'color:' + '#c41a16');
+    }
+    // Only test vars.
+    else if (t == 0 || t == 'VARS' || t == 'VAR'){
+        console.log('%c' + SSM_BASE.run.varsCheck(), 'color:' + '#c41a16');
+    }
+    // Only test regular tracking.
+    else {
+        // (EXT_INV, EXT_NON, ENGAGE, EXPAND, INTRO, PREV)
+        console.log('%c' + testTrack(6, 5, 2, 0, 0, 0), 'color:' + '#c41a16');
+    }
+
+    return '--- ALL TESTING COMPLETE ---';
+}
+ì¡FŸó      YiF¸YiF¸=ù£&YiF¸   ¬    :https://cdn.speedshiftmedia.com/products/dynamicwebads/adserving/htmlbackup/jstemplate/js/app/shuffle_squareCornerCta/shuffle_squareCornerCta.300x600.js?bust=1500071607752 necko:classified 1 strongly-framed 1 security-info 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 request-method GET response-head HTTP/1.1 200 OK
+Content-Type: application/x-javascript
+Content-Length: 39579
+Date: Thu, 20 Apr 2017 18:57:35 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:18 GMT
+Etag: "520357b739099ea1bfe762a61deb749c"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 29336
+X-Cache: Hit from cloudfront
+Via: 1.1 ddaf69ada7188b6901a13f7efa56b14e.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: SUrkJVKlCnAqX0mVzsHdfchn5_KPHtO3VMwwBddw-mv98ehKukcjJg==
+ original-response-headers Content-Type: application/x-javascript
+Content-Length: 39579
+Connection: keep-alive
+Date: Thu, 20 Apr 2017 18:57:35 GMT
+Last-Modified: Mon, 26 Sep 2016 22:43:18 GMT
+Etag: "520357b739099ea1bfe762a61deb749c"
+Cache-Control: max-age=86400
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 29336
+X-Cache: Hit from cloudfront
+Via: 1.1 ddaf69ada7188b6901a13f7efa56b14e.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: SUrkJVKlCnAqX0mVzsHdfchn5_KPHtO3VMwwBddw-mv98ehKukcjJg==
+ uncompressed-len 0 net-response-time-onstart 134 net-response-time-onstop 140   š›

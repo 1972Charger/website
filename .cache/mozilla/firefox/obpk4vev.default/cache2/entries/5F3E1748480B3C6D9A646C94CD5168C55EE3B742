@@ -1,0 +1,623 @@
+/*
+*------------------------------------------------------------------------------------------------------------------------------------*
+* The new Scroller that utulizes the animatino_v2 which is a time based animation function, this slider will place cells on          *
+* stage and animate them between positions                                                                                           *
+*====================================================================================================================================*
+* width          (@string)  = the width of the slider ex '100px'                                                                     *
+* height         (@string)  = the height of the slider ex '100px'                                                                    *
+* inventoryArray (@Array)   = the array of cells to be moved through ex [basicCell, basicCell]                                       *
+* posArray       (@Array)   = the array of position objects ex [{left: '10px', top: '5px', EASING: 'LINEAR', animateIn: '500'}]      *
+* nextArrow      (@Arrows)  = arrow type similar to basicArrow or other arrows that will be created                                  *
+* prevArrow      (@Arrows)  = same as nextArrow                                                                                      *
+* arrowPos       (@Array)   = a position object array containing the positions of the arrows first object to be for previous arrow   *
+*                             and the secound to be next arrow                                                                       *
+* visiable       (@Number)  = Number of visiable cells on the stage                                                                  *
+* slideDurationg (@Number)  = time the animation to take in milisecounds                                                             *
+* cloning        (@bool)    = To clone or not to clone                                                                               *
+* specialCase    (@Object)  = A Refrence array with position arrays for the cases that could occur ex {2: [{left: '10px', top:       *
+*                             '5px', EASING: 'LINEAR', animateIn: '500'} ,{left: '10px', top: '115px', EASING: 'LINEAR',             *
+*                             animateIn: '500'}]}                                                                                    *
+*                                                                                                                                    *
+*                                                                                                                                    *
+*  @Dmitri                                                                                                                           *
+*  May 6 2014 - added indexOffset                                                                                                    *
+*                                                                                                                                    *
+*  @Chris                                                                                                                            *
+*  May 30 2014 - Cloning was causing 1 cell too many to be cloned. Updated logic to fix this.                                        *
+*  June 5 2014 - Updated autoScrolling functionality so that the intervalTimer resets each time arrow scrolling occurs.              *
+-------------------------------------------------------------------------------------------------------------------------------------*
+*/
+function slider(width, height, inventoryArray, posArray, nextArrow, prevArrow, arrowPos, visiable, slideDuration, cloning, slideBY,specialCase, indexOffset, oneCellClone) {
+    //save needed values as properties so it will be possible to use it through out the object
+    this.visiable       = visiable;
+    this.inventoryArray = inventoryArray;
+    this.posArray       = posArray;
+    this.slideDuration  = slideDuration;
+    this.timer          = SSM_ad_obj.AnimationDelay;
+    this.specialCase    = specialCase;
+    this.arrowPos       = arrowPos;
+    this.slide          = slideBY;
+    var _indexOffset    = indexOffset || 0;
+
+    var stagePos        = [];
+
+
+
+    //creates the DOM element to hold the scroller and apply basic style to it
+    var Scroller = document.createElement('div');
+    id('ssm_ad_container').appendChild(Scroller);
+    Scroller.setAttribute('class', 'scroller');
+    Scroller.appendChild(innerScroller = document.createElement('div'));
+    innerScroller.setAttribute('id', 'innerScroller');
+
+    superStyle(Scroller, {
+        width:      width,
+        height:     height,
+        position:   'absolute',
+        overflow:   'hidden'
+    });
+
+   superStyle(innerScroller, {
+        width:      width,
+        height:     height,
+        position:   'relative',
+        overflow:   'hidden'
+    });
+
+    for(var i = 0; i < posArray.length; i++) {
+        if(!posArray[i].hasOwnProperty('placeHolder')) {
+            stagePos.push(posArray[i])
+        }
+
+    }
+
+    if(inventoryArray.length == 1 && !oneCellClone) {
+        innerScroller.appendChild(inventoryArray[0].dom);
+        centerDiv(inventoryArray[0].dom);
+        inventoryArray[0].animateIn();
+    } else if(inventoryArray.length < stagePos.length) {
+        if(this.specialCase && this.specialCase.hasOwnProperty(inventoryArray.length)){
+            for(var i = 0; i < this.specialCase[inventoryArray.length].length; i++) {
+                var temp = inventoryArray[i];
+                innerScroller.appendChild(temp.dom);
+
+                for(var j in this.specialCase[inventoryArray.length][i]) {
+                    switch(j) {
+                        case 'animateIn':
+                            temp.animateIn();
+                            break;
+                        case 'animateOut':
+                            temp.animateOut();
+                            break;
+                        default:
+                            if(j != 'EASING') {
+                                temp.dom.style[j] = this.specialCase[inventoryArray.length][i][j]
+                            }
+                            break;
+                    }
+                }
+            }
+        } else if(cloning) {
+            var count = 0;
+
+            while(inventoryArray.length < posArray.length) {
+                var temp = inventoryArray[count].clone(inventoryArray.length);
+                inventoryArray.push(temp);
+                count++;
+            }
+            for(var t = 0; t < slideBY+_indexOffset; t++) {
+        var temp = inventoryArray[inventoryArray.length-(slideBY+_indexOffset -t)];
+        innerScroller.appendChild(temp.dom);
+
+        for(var k in stagePos[t]) {
+            switch(k) {
+                case 'animateIn':
+                    temp.animateIn();
+                    break;
+                case 'animateOut':
+                    temp.animateOut();
+                    break;
+                default:
+                    if(k != 'EASING') {
+                        temp.dom.style[k] = stagePos[t][k]
+                    }
+                    break;
+            }
+        }
+            }
+
+
+
+            for(var j =(slideBY+_indexOffset); j < stagePos.length; j++) {
+                var tempIndex = ((j-(slideBY + _indexOffset))<0)?(inventoryArray.length+((j-(slideBY + _indexOffset)))):(j-(slideBY + _indexOffset));
+                var temp = inventoryArray[tempIndex];
+                innerScroller.appendChild(temp.dom);
+
+                for(var k in stagePos[j]) {
+                    switch(k) {
+                        case 'animateIn':
+                            temp.animateIn();
+                            break;
+                        case 'animateOut':
+                            temp.animateOut();
+                            break;
+                        default:
+                            if(k != 'EASING') {
+                                temp.dom.style[k] = stagePos[j][k]
+                            }
+                            break;
+                    }
+                }
+            }
+            //adds a refrence to the arrows for the slider to use later if needed
+            this.nextArrow = nextArrow.dom;
+            this.prevArrow = prevArrow.dom;
+
+            //adds the arrows into DOM
+            Scroller.appendChild(nextArrow.dom);
+            Scroller.appendChild(prevArrow.dom);
+
+            //position the arrows
+            superStyle(this.prevArrow, this.arrowPos.prev);
+            superStyle(this.nextArrow, this.arrowPos.next);
+
+            //adds the mouseEvents on the arrows to control the scroller
+            this.addMouseEvent();
+        }
+
+    } else {
+            for(var t = 0; t < slideBY+_indexOffset; t++) {
+        var temp = inventoryArray[inventoryArray.length-((slideBY+_indexOffset) -t)];
+        innerScroller.appendChild(temp.dom);
+
+        for(var k in stagePos[t]) {
+            switch(k) {
+                case 'animateIn':
+                    temp.animateIn();
+                    break;
+                case 'animateOut':
+                    temp.animateOut();
+                    break;
+                default:
+                    if(k != 'EASING') {
+                        temp.dom.style[k] = stagePos[t][k]
+                    }
+                    break;
+            }
+        }
+            }
+
+
+        for(var j = slideBY+_indexOffset; j < stagePos.length; j++) {
+            var tempIndex = ((j-(slideBY + _indexOffset))<0)?(inventoryArray.length-((j-(slideBY + _indexOffset))*(-1))):(j-(slideBY + _indexOffset));
+            var temp = inventoryArray[tempIndex];
+            innerScroller.appendChild(temp.dom);
+
+            for(var k in stagePos[j]) {
+                switch(k) {
+                    case 'animateIn':
+                        temp.animateIn();
+                        break;
+                    case 'animateOut':
+                        temp.animateOut();
+                        break;
+                    default:
+                        if(k != 'EASING') {
+                            temp.dom.style[k] = stagePos[j][k]
+                        }
+                        break;
+                }
+            }
+        }
+
+        //adds a refrence to the arrows for the slider to use later if needed
+        this.nextArrow = nextArrow.dom;
+        this.prevArrow = prevArrow.dom;
+
+        //adds the arrows into DOM
+        Scroller.appendChild(nextArrow.dom);
+        Scroller.appendChild(prevArrow.dom);
+
+        //position the arrows
+        superStyle(this.prevArrow, this.arrowPos.prev);
+        superStyle(this.nextArrow, this.arrowPos.next);
+
+        //adds the mouseEvents on the arrows to control the scroller
+        this.addMouseEvent();
+    }
+
+    this.stagePos       = stagePos;
+}
+
+//the function that will remove the needed cell and add a new one when cells are being moved in the previous direction
+slider.prototype.prevAd = function() {
+
+    for(var i = parseInt(this.slide)-1; i > -1; i--) {
+        //stores the first cells index
+        var index = parseInt(id('innerScroller').children[0].getAttribute('id'));
+
+        //calculates the next index to be removed
+        var newIndex = index  - 1;
+
+        //checks to see if the new Index is valid
+        if(newIndex < 0) {
+            newIndex = this.inventoryArray.length - 1;
+        }
+
+        //stores the cell to be removed
+        var temp = id('innerScroller').children[this.stagePos.length - 1];
+
+        //removes the cell
+        id('innerScroller').removeChild(temp);
+
+        //inserts a new cell at the top of the stack
+        id('innerScroller').insertBefore(this.inventoryArray[newIndex].dom, id('innerScroller').firstChild);
+
+        //positions the cell as specified in the position array for this position
+        for(var j in this.posArray[parseInt(this.slide)-i]) {
+            switch(j) {
+                case 'animateIn':
+                    this.inventoryArray[newIndex].animateIn();
+                    break;
+                case 'animateOut':
+                    break;
+                default:
+                    if(j != 'EASING') {
+                        id('innerScroller').children[0].style[j] = this.posArray[i+parseInt(this.slide)][j]
+                    }
+                    break;
+            }
+        }
+    }
+
+}
+
+//the function that will remove the needed cell and add a new one when cells are being moved in the next direction
+slider.prototype.nextAd = function() {
+    for(var i = 0; i < parseInt(this.slide); i++) {
+        //stores the last cells index
+        var index = parseInt(id('innerScroller').children[this.stagePos.length - (1)].getAttribute('id'));
+        //calculates the next index to be removed
+        var newIndex = index  + 1;
+
+        //checks to see if the new Index is valid
+        if(newIndex >= this.inventoryArray.length) {
+            newIndex = 0;
+        }
+
+        //stores the cell to be removed
+        var temp = id('innerScroller').children[0];
+        //remoces the cell
+        id('innerScroller').removeChild(temp);
+
+        //appends a new cell at the bottom of the stack
+        id('innerScroller').appendChild(this.inventoryArray[newIndex].dom);
+
+        //positions the cell as specified in the position array for this position
+        for(var j in this.posArray[this.stagePos.length+i]) {
+            switch(j) {
+                case 'animateIn':
+                    this.inventoryArray[newIndex].animateIn();
+                    break;
+                case 'animateOut':
+                    break;
+                default:
+                    if(j != 'EASING') {
+                        id('innerScroller').children[this.stagePos.length-1].style[j] = this.posArray[this.stagePos.length+i][j]
+                    }
+                    break;
+            }
+        }
+    }
+}
+
+//The function that will move the previous cell in to view
+slider.prototype.prev = function(event) {
+    /*var event = event || window.event
+    event.stopPropagation ? event.stopPropagation() : (event.cancelBubble=true)
+    target = (event.currentTarget) ? event.currentTarget : event.srcElement;*/
+
+    //removes mouse event to stop mass clicking
+    this.removeMouseEvent();
+    //safe a record of the scope
+    var self = this;
+
+    var autoScrollDelay = (self.Delay) ? self.Delay : 2500;
+
+    //reset autoScrolling timer.
+    clearInterval(self.autoIntervalTimer);
+    self.autoIntervalTimer = setInterval(function(){self.autoScrollTimer(self)}, autoScrollDelay);
+
+    //loops through the cells that are in DOM at the moment
+    for(var i = (this.stagePos.length - 1); i > -1 ; i--) {
+
+        //creates a blanc object that will be poplated based on the position that the cell move to
+        var tempObj     = {inn: null, inTime: null, out: null, pos: {}};
+
+        //stores the cell to be moved in a  temp variable
+        var temp        = this.inventoryArray[id('innerScroller').children[i].getAttribute('id')];
+
+        var movingTo = i+(parseInt(this.slide)*2);
+
+        //loops through the position object and populates another object
+        for(var j in this.posArray[movingTo]) {
+            //switches on the key
+            switch(j) {
+
+                //incase of animateIn it will store the record of it and the time when it should animate in
+                case 'animateIn':
+                    tempObj.inn = 'animateIn';
+                    tempObj.inTime = this.posArray[movingTo][j];
+                    break;
+
+                //incase of animateOut it will animateOut instantly
+                case 'animateOut':
+                    temp.animateOut();
+                    break;
+
+                //the standard styles will be added to the new object to be animated over
+                default:
+                    tempObj.pos[j] = this.posArray[movingTo][j];
+                    break;
+            }
+        }
+
+        //passes the information to the cell so it can move
+        if(i == (0)) {
+            var time2 = tempObj.inTime;
+            var cell2 = temp;
+            temp.move(tempObj.pos, self.slideDuration, ((function(){self.prevAd(); self.addMouseEvent();})));
+            if(time2) {
+                work(cell2, time2);
+            }
+        } else {
+            var time = tempObj.inTime;
+            var cell = temp;
+            temp.move(tempObj.pos, self.slideDuration);
+
+            if(time) {
+                work(cell, time);
+            }
+        }
+    }
+}
+function work(cell, time) {
+    setTimeout(function(){
+        cell.animateIn()
+    }, time);
+}
+//The function that will move the next cell in to view
+slider.prototype.next = function(event) {
+    /*var event = event || window.event
+    event.stopPropagation ? event.stopPropagation() : (event.cancelBubble=true)
+    target = (event.currentTarget) ? event.currentTarget : event.srcElement;*/
+
+    //removes mouse event to stop mass clicking
+    this.removeMouseEvent();
+
+    //safe a record of the scope
+    var self = this;
+
+    var autoScrollDelay = (self.Delay) ? self.Delay : 2500;
+
+    //reset autoScrolling timer.
+    clearInterval(self.autoIntervalTimer);
+    self.autoIntervalTimer = setInterval(function(){self.autoScrollTimer(self)}, autoScrollDelay);
+
+    //loops through the cells that are in DOM at the moment
+    for(var i = 0; i < (this.stagePos.length); i++) {
+
+        //creates a blanc object that will be poplated based on the position that the cell move to
+        var tempObj = {inn: null, inTime: null, out: null, pos: {}};
+
+        //stores the cell to be moved in a  temp variable
+        var temp = this.inventoryArray[id('innerScroller').children[i].getAttribute('id')];
+
+        //loops through the position object and populates another object
+
+        for(var j in this.posArray[i]) {
+
+            //switches on the key
+            switch(j) {
+
+                //incase of animateIn it will store the record of it and the time when it should animate in
+                case 'animateIn':
+                    tempObj.inn = 'animateIn';
+                    tempObj.inTime = this.posArray[i][j];
+                    break;
+
+                //incase of animateOut it will animateOut instantly
+                case 'animateOut':
+                    temp.animateOut();
+                    break;
+
+                //the standard styles will be added to the new object to be animated over
+                default:
+                    tempObj.pos[j] = this.posArray[i][j];
+                    break;
+            }
+
+
+        }
+
+        //passes the information to the cell so it can move
+        if(i == (this.stagePos.length-1)) {
+            var time2 = tempObj.inTime;
+            var cell2 = temp;
+            temp.move(tempObj.pos, self.slideDuration, ((function(){self.nextAd(); self.addMouseEvent();})));
+            if(time2) {
+                work(cell2, time2);
+            }
+        } else {
+            var time = tempObj.inTime;
+            var cell = temp;
+
+            temp.move(tempObj.pos, self.slideDuration);
+
+            if(time) {
+                work(cell, time);
+            }
+        }
+    }
+}
+
+//adds Mouse Events to wait on arrow clicks to animate the cells
+slider.prototype.addMouseEvent = function() {
+    var self = this;
+    addEvent(this.nextArrow, 'click',nextEvent =  function(event){self.next(event)}, false);
+    addEvent(this.prevArrow, 'click',prevEvent =  function(event){self.prev(event)}, false);
+
+    this.nextEvent = nextEvent;
+    this.prevEvent = prevEvent;
+
+    this.indexGo = true;
+    this.currentIndex = id('innerScroller').children[1].getAttribute('id');
+    if(this.indexer) {
+        this.indexer(this.currentIndex);
+    }
+}
+
+//removes the Mouse Evenst from the arrows
+slider.prototype.removeMouseEvent = function() {
+    var self = this;
+    removeEvent(this.nextArrow, 'click', this.nextEvent);
+    removeEvent(this.prevArrow, 'click', this.prevEvent);
+
+    this.indexGo = false;
+}
+
+//handles autoScroll timer.
+slider.prototype.autoScrollTimer = function(self) {
+    //checks to see if the animationDelay time has expired.
+    if(mainAnimationDelay != -1) {
+        //checks to see if the mouse is inside the ad
+        if(!(self.stop)) {
+            //calls the next function
+            self.next();
+        }
+    } else {
+        //once the time runs out the interval gets cleared
+        clearInterval(self.autoIntervalTimer);
+    }
+}
+
+//starts the Auto scrolling
+slider.prototype.startAuto = function() {
+    var self = this;
+
+    //adds mouse events to the whole add to stop and restart auto scrolling as the mouse enters and leaves the ad
+    addEvent(id('ssm_ad_container'), 'mouseenter', function(){self.pause()}, true);
+    addEvent(id('ssm_ad_container'), 'mouseleave', function(){self.reStart()}, true);
+
+    //starts the scrolling
+    this.auto();
+}
+
+//Auto scrolling function that will move cells to next positions if time alowed
+slider.prototype.auto = function() {
+    var self = this;
+
+    //get scrollDelay
+    self.scrollDelay = (this.Delay) ? this.Delay : 2500;
+
+    //start interval
+    self.autoIntervalTimer = setInterval(function(){self.autoScrollTimer(self)}, self.scrollDelay);
+}
+
+//function that calculates the time past since auto scrolling started
+slider.prototype.getTime = function() {
+    this.timePast  = new Date().getTime() - this.timeStart;
+}
+
+//pauses the auto scrolling
+slider.prototype.pause = function() {
+    this.stop = true;
+}
+
+//restarts the auto scrolling
+slider.prototype.reStart = function() {
+    this.stop = false;
+}
+
+//variable used by auto scrolling to see if it is paused or not
+slider.prototype.stop = false;
+
+slider.prototype.x = function(left) {
+    byClass('scroller')[0].style.left = left;
+}
+
+slider.prototype.y = function(top) {
+    byClass('scroller')[0].style.top = top;
+}
+
+slider.prototype.scrollDelay = function(delay) {
+    this.Delay = delay;
+}
+
+slider.prototype.indexClick = function(ID) {
+    var self = this;
+    if(this.indexGo){
+        var testBool = ((ID == 0) && (id('innerScroller').children[1].getAttribute('id') == this.inventoryArray.length-1));
+        var testBool2 = ((ID == this.inventoryArray.length-1) && (id('innerScroller').children[1].getAttribute('id') == 0));
+        if(parseInt(ID) > parseInt(id('innerScroller').children[1].getAttribute('id'))&&(!testBool)&&(!testBool2)) {
+            this.inventoryArray[ID].dom.style.cssText = id('innerScroller').children[2].style.cssText;
+            id('innerScroller').replaceChild(this.inventoryArray[ID].dom,id('innerScroller').children[2]);
+            this.next();
+            var testInterval = setInterval(function() {
+                if(self.indexGo){
+                var temp = self.inventoryArray[((parseInt(ID)-1)>=0)?(parseInt(ID)-1):(self.inventoryArray.length-1)].dom;
+                temp.style.cssText = id('innerScroller').children[0].style.cssText;
+                id('innerScroller').replaceChild(temp, id('innerScroller').children[0]);
+                clearInterval(testInterval);
+                }
+            },100);
+        } else if(ID < id('innerScroller').children[1].getAttribute('id')&&(!testBool)&&(!testBool2)) {
+            this.inventoryArray[ID].dom.style.cssText = id('innerScroller').children[0].style.cssText;
+            id('innerScroller').replaceChild(this.inventoryArray[ID].dom,id('innerScroller').children[0]);
+            this.prev();
+            var testInterval = setInterval(function() {
+                if(self.indexGo){
+                var temp = self.inventoryArray[((parseInt(ID)+1)<=self.inventoryArray.length-1)?(parseInt(ID)+1):(0)].dom;
+                temp.style.cssText = id('innerScroller').children[2].style.cssText;
+                id('innerScroller').replaceChild(temp, id('innerScroller').children[2]);
+                clearInterval(testInterval);
+                }
+            },100);
+        } else if (testBool) {
+            this.next()
+        } else if (testBool2) {
+            this.prev();
+        } else {
+        }
+    }
+}
+
+
+
+ŒH°.{      YiF¸YiF¸=ù£&YiF¸   ˜    :https://cdn.speedshiftmedia.com/products/dynamicwebads/adserving/htmlbackup/jstemplate/js/lib/v2/components/slider/multiSlider_v2.js?bust=1500071607752 necko:classified 1 strongly-framed 1 security-info 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 request-method GET response-head HTTP/1.1 200 OK
+Content-Type: application/x-javascript
+Content-Length: 24004
+Date: Thu, 20 Apr 2017 18:54:05 GMT
+Last-Modified: Wed, 22 Oct 2014 21:02:25 GMT
+Etag: "c9554f8055862bec9e365673ee365ef8"
+Content-Encoding: UTF-8
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 31820
+X-Cache: Hit from cloudfront
+Via: 1.1 0b3d659e10c138d010412baeedccd7a8.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: bmeGC0dXkt_oeQfSHLMHxYHR935-zIWmfpMu8zS3dnR2ADxk5_GQ5Q==
+ original-response-headers Content-Type: application/x-javascript
+Content-Length: 24004
+Connection: keep-alive
+Date: Thu, 20 Apr 2017 18:54:05 GMT
+Last-Modified: Wed, 22 Oct 2014 21:02:25 GMT
+Etag: "c9554f8055862bec9e365673ee365ef8"
+Content-Encoding: UTF-8
+Accept-Ranges: bytes
+Server: AmazonS3
+Age: 31820
+X-Cache: Hit from cloudfront
+Via: 1.1 0b3d659e10c138d010412baeedccd7a8.cloudfront.net (CloudFront)
+X-Amz-Cf-Id: bmeGC0dXkt_oeQfSHLMHxYHR935-zIWmfpMu8zS3dnR2ADxk5_GQ5Q==
+ net-response-time-onstart 105 net-response-time-onstop 106   ]Ä

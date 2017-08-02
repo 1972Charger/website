@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Take in an arguement and print out "Hello" followed by the argument.
+
+# Assign the process id to the first argument.
+
+
+
+echo "What is your name?"
+read name
+
+echo "Hello, $name! Why are you so early?"
