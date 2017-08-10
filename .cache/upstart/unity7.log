@@ -1,5 +1,24 @@
-WARN  2017-08-02 12:25:03 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
-ERROR 2017-08-02 12:30:21 unity.settings UnitySettings.cpp:318 Invalid monitor index: -1. Returning index 0 monitor instead.
-WARN  2017-08-02 12:41:08 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
-WARN  2017-08-02 12:47:27 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
-WARN  2017-08-02 12:53:56 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
+ERROR 2017-08-10 07:40:42 unitysource != null <unknown>:0 g_value_set_object: assertion 'g_value_type_compatible (G_OBJECT_TYPE (v_object), G_VALUE_TYPE (value))' failed
+1502369550770	addons.xpi	WARN	Expected add-on followonsearch@mozilla.com is missing from the system add-on location.
+WARN  2017-08-10 08:55:58 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
+WARN  2017-08-10 08:56:27 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
+WARN  2017-08-10 08:57:15 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.
+1502370064337	addons.update-checker	WARN	Update manifest for firefox@getpocket.com did not contain an updates property
+1502370064357	addons.update-checker	WARN	Update manifest for aushelper@mozilla.org did not contain an updates property
+1502370064389	addons.update-checker	WARN	Update manifest for webcompat@mozilla.org did not contain an updates property
+1502370064408	addons.update-checker	WARN	Update manifest for e10srollout@mozilla.org did not contain an updates property
+1502370064471	addons.update-checker	WARN	Update manifest for {972ce4c6-7e08-4474-a285-3208198ce6fd} did not contain an updates property
+1502370065302	addons.productaddons	WARN	Failed downloading via XHR, status: 0, reason: error
+1502370065315	addons.xpi	ERROR	Failed to download system add-on followonsearch@mozilla.com: Error: Failed downloading via XHR, status: 0, reason: error (resource://gre/modules/addons/ProductAddonChecker.jsm:319:16) JS Stack trace: fail@ProductAddonChecker.jsm:319:16
+1502370065337	addons.productaddons	WARN	Failed downloading via XHR, status: 0, reason: error
+1502370065342	addons.xpi	ERROR	Failed to download system add-on shield-recipe-client@mozilla.org: Error: Failed downloading via XHR, status: 0, reason: error (resource://gre/modules/addons/ProductAddonChecker.jsm:319:16) JS Stack trace: fail@ProductAddonChecker.jsm:319:16
+1502370065378	addons.productaddons	WARN	Failed downloading via XHR, status: 0, reason: error
+1502370065384	addons.xpi	ERROR	Failed to download system add-on e10srollout@mozilla.org: Error: Failed downloading via XHR, status: 0, reason: error (resource://gre/modules/addons/ProductAddonChecker.jsm:319:16) JS Stack trace: fail@ProductAddonChecker.jsm:319:16
+1502370065391	addons.manager	WARN	Failed to update system addons: Error: Rejecting updated system add-on set that either could not be downloaded or contained unusable add-ons. (resource://gre/modules/addons/XPIProvider.jsm:3217:13) JS Stack trace: this.XPIProvider.updateSystemAddons<@XPIProvider.jsm:3217:13
+*************************
+A coding exception was thrown and uncaught in a Task.
+
+Full message: TypeError: NetworkError when attempting to fetch resource.
+Full stack: 
+*************************
+WARN  2017-08-10 09:04:37 unity.shell.compiz unityshell.cpp:3241 Animation plugin not found. Can't set minimize speed.

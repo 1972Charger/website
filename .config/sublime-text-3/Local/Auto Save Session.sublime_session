@@ -254,7 +254,7 @@
 					"file": "/home/sam/repos/website/index.html",
 					"settings":
 					{
-						"buffer_size": 158,
+						"buffer_size": 199,
 						"encoding": "UTF-8",
 						"line_ending": "Unix"
 					}
@@ -350,7 +350,7 @@
 			"groups":
 			[
 				{
-					"selected": 8,
+					"selected": 7,
 					"sheets":
 					[
 						{
@@ -558,15 +558,15 @@
 							"semi_transient": false,
 							"settings":
 							{
-								"buffer_size": 158,
+								"buffer_size": 199,
 								"regions":
 								{
 								},
 								"selection":
 								[
 									[
-										158,
-										158
+										141,
+										141
 									]
 								],
 								"settings":
@@ -577,7 +577,7 @@
 								"translation.y": 0.0,
 								"zoom_level": 1.0
 							},
-							"stack_index": 1,
+							"stack_index": 0,
 							"type": "text"
 						},
 						{
@@ -605,7 +605,7 @@
 								"translation.y": 172.0,
 								"zoom_level": 1.0
 							},
-							"stack_index": 0,
+							"stack_index": 1,
 							"type": "text"
 						},
 						{
@@ -675,7 +675,7 @@
 				"height": 0.0
 			},
 			"pinned_build_system": "",
-			"position": "0,0,0,0,0,72,48,712,500,1600,795",
+			"position": "0,0,0,0,0,245,82,885,534,1600,795",
 			"project": "",
 			"replace":
 			{
